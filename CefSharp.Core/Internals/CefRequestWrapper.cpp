@@ -63,12 +63,12 @@ namespace CefSharp
             return nullptr;
         }
 
-        IDictionary<String^, String^>^ CefRequestWrapper::Headers::get()
+        NameValueCollection^ CefRequestWrapper::Headers::get()
         {
             CefRequest::HeaderMap hm;
             _wrappedRequest->GetHeaderMap(hm);
 
-            IDictionary<String^, String^>^ headers = gcnew Dictionary<String^, String^>();
+            NameValueCollection^ headers = gcnew NameValueCollection();
 
             for (CefRequest::HeaderMap::iterator it = hm.begin(); it != hm.end(); ++it)
             {
@@ -80,18 +80,26 @@ namespace CefSharp
             return headers;
         }
 
-        void CefRequestWrapper::Headers::set(IDictionary<String^, String^>^ headers)
+        void CefRequestWrapper::Headers::set(NameValueCollection^ headers)
         {
             CefRequest::HeaderMap hm;
 
-            for each(KeyValuePair<String^, String^>^ pair in headers)
+            for each(String^ key in headers)
             {
-                CefString name = StringUtils::ToNative(pair->Key);
-                CefString value = StringUtils::ToNative(pair->Value);
-                hm.insert(std::make_pair(name, value));
+                CefString name = StringUtils::ToNative(key);
+                for each(String^ element in headers->GetValues(key))
+                {
+                    CefString value = StringUtils::ToNative(element);
+                    hm.insert(std::make_pair(name, value));
+                }
             }
 
             _wrappedRequest->SetHeaderMap(hm);
+        }
+
+        TransitionType CefRequestWrapper::TransitionType::get()
+        {
+            return (CefSharp::TransitionType) _wrappedRequest->GetTransitionType();
         }
     }
 }

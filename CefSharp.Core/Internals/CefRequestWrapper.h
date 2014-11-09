@@ -8,7 +8,8 @@
 #include "MCefRefPtr.h"
 
 using namespace System;
-using namespace System::Collections::Generic;
+using namespace System::Collections::Specialized;
+using namespace CefSharp;
 
 namespace CefSharp
 {
@@ -18,14 +19,22 @@ namespace CefSharp
         {
             MCefRefPtr<CefRequest> _wrappedRequest;
         internal:
-            CefRequestWrapper(CefRefPtr<CefRequest> cefRequest) : _wrappedRequest(cefRequest) {}
+            CefRequestWrapper(CefRefPtr<CefRequest> cefRequest) : 
+                _wrappedRequest(cefRequest) 
+            {
+            }
+
+            ~CefRequestWrapper()
+            {
+                _wrappedRequest = nullptr;
+            }
 
         public:
             virtual property String^ Url { String^ get(); void set(String^ url); }
             virtual property String^ Method { String^ get(); }
             virtual property String^ Body { String^ get(); }
-            virtual property IDictionary<String^, String^>^ Headers { IDictionary<String^, String^>^  get(); void set(IDictionary<String^, String^>^ url); }
-
+            virtual property NameValueCollection^ Headers { NameValueCollection^ get(); void set(NameValueCollection^ url); }
+            virtual property TransitionType TransitionType { CefSharp::TransitionType get(); }
         };
     }
 }

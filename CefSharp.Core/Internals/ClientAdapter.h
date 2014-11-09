@@ -26,7 +26,8 @@ namespace CefSharp
             public CefContextMenuHandler,
             public CefFocusHandler,
             public CefKeyboardHandler,
-            public CefJSDialogHandler
+            public CefJSDialogHandler,
+            public CefDialogHandler
         {
         private:
             gcroot<IWebBrowserInternal^> _browserControl;
@@ -45,8 +46,11 @@ namespace CefSharp
 
             ~ClientAdapter() 
             {
-                _browserControl = nullptr; 
+                _browserControl = nullptr;
                 _managedCefBrowserAdapter = nullptr;
+                _browserHwnd = nullptr;
+                _cefBrowser = nullptr;
+                _tooltip = nullptr;
             }
 
             HWND GetBrowserHwnd() { return _browserHwnd; }
@@ -62,6 +66,7 @@ namespace CefSharp
             virtual CefRefPtr<CefFocusHandler> GetFocusHandler() OVERRIDE{ return this; }
             virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() OVERRIDE{ return this; }
             virtual CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() OVERRIDE{ return this; }
+            virtual CefRefPtr<CefDialogHandler> GetDialogHandler() OVERRIDE{ return this; }
 
             // CefLifeSpanHandler
             virtual DECL bool OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
@@ -79,6 +84,10 @@ namespace CefSharp
             virtual DECL bool OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request) OVERRIDE;
             virtual DECL bool GetAuthCredentials(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, bool isProxy,
                 const CefString& host, int port, const CefString& realm, const CefString& scheme, CefRefPtr<CefAuthCallback> callback) OVERRIDE;
+            virtual DECL bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool isRedirect) OVERRIDE;
+            virtual DECL bool OnBeforePluginLoad( CefRefPtr< CefBrowser > browser, const CefString& url, const CefString& policy_url, CefRefPtr< CefWebPluginInfo > info ) OVERRIDE;
+            virtual DECL void OnPluginCrashed(CefRefPtr<CefBrowser> browser, const CefString& plugin_path) OVERRIDE;
+            virtual DECL void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status) OVERRIDE;
 
             // CefDisplayHandler
             virtual DECL void OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward) OVERRIDE;
@@ -86,6 +95,7 @@ namespace CefSharp
             virtual DECL void OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title) OVERRIDE;
             virtual DECL bool OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text) OVERRIDE;
             virtual DECL bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString& message, const CefString& source, int line) OVERRIDE;
+            virtual DECL void OnStatusMessage(CefRefPtr<CefBrowser> browser, const CefString& message) OVERRIDE;
 
             // CefRenderProcessHandler
             virtual DECL void OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) OVERRIDE;
@@ -99,11 +109,17 @@ namespace CefSharp
 
             // CefKeyboardHandler
             virtual DECL bool OnKeyEvent(CefRefPtr<CefBrowser> browser, const CefKeyEvent& event, CefEventHandle os_event) OVERRIDE;
+            virtual DECL bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser, const CefKeyEvent& event, CefEventHandle os_event, bool* is_keyboard_shortcut) OVERRIDE;
 
             // CefJSDialogHandler
-            virtual bool OnJSDialog(CefRefPtr<CefBrowser> browser, const CefString& origin_url, const CefString& accept_lang,
+            virtual DECL bool OnJSDialog(CefRefPtr<CefBrowser> browser, const CefString& origin_url, const CefString& accept_lang,
                 JSDialogType dialog_type, const CefString& message_text, const CefString& default_prompt_text,
                 CefRefPtr<CefJSDialogCallback> callback, bool& suppress_message) OVERRIDE;
+
+            // CefDialogHandler
+            virtual DECL bool OnFileDialog(CefRefPtr<CefBrowser> browser, FileDialogMode mode, const CefString& title,
+                const CefString& default_file_name, const std::vector<CefString>& accept_types,
+                CefRefPtr<CefFileDialogCallback> callback) OVERRIDE;
 
             IMPLEMENT_LOCKING(ClientAdapter);
             IMPLEMENT_REFCOUNTING(ClientAdapter);

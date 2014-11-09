@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿// Copyright © 2010-2014 The CefSharp Authors. All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
+
+using System.Collections.Specialized;
 using System.IO;
 
 namespace CefSharp
@@ -12,7 +16,7 @@ namespace CefSharp
 
         string MimeType { get; set; }
 
-        IDictionary<string, string> ResponseHeaders { get; set; }
+        NameValueCollection ResponseHeaders { get; set; }
 
         /// <summary>
         /// The status code of the response. Unless set, the default value used is 200

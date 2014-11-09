@@ -6,9 +6,10 @@
 
 #include "Stdafx.h"
 #include "SchemeHandlerWrapper.h"
+#include "Internals/MCefRefPtr.h"
 
 using namespace System;
-using namespace System::Collections::Generic;
+using namespace System::Collections::Specialized;
 using namespace System::IO;
 
 namespace CefSharp
@@ -18,7 +19,7 @@ namespace CefSharp
     public ref class SchemeHandlerResponse : ISchemeHandlerResponse
     {
     internal:
-        CefRefPtr<SchemeHandlerWrapper>* _schemeHandlerWrapper;
+        MCefRefPtr<SchemeHandlerWrapper> _schemeHandlerWrapper;
         void OnRequestCompleted();
 
     public:
@@ -28,7 +29,7 @@ namespace CefSharp
         virtual property Stream^ ResponseStream;
 
         virtual property String^ MimeType;
-        virtual property IDictionary<String^, String^>^ ResponseHeaders;
+        virtual property NameValueCollection^ ResponseHeaders;
 
         /// <summary>
         /// The status code of the response. Unless set, the default value used is 200
@@ -57,12 +58,12 @@ namespace CefSharp
         SchemeHandlerResponse(SchemeHandlerWrapper* schemeHandlerWrapper)
         {
             ContentLength = -1;
-            _schemeHandlerWrapper = new CefRefPtr<SchemeHandlerWrapper>(schemeHandlerWrapper);
+            _schemeHandlerWrapper = schemeHandlerWrapper;
         }
 
         void ReleaseSchemeHandlerWrapper()
         {
-            delete _schemeHandlerWrapper;
+            _schemeHandlerWrapper = nullptr;
         }
     };
 };

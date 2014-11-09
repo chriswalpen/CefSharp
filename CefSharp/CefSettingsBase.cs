@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿// Copyright © 2010-2014 The CefSharp Authors. All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
+
+using System.Collections.Generic;
 
 namespace CefSharp
 {
@@ -7,6 +11,7 @@ namespace CefSharp
         protected CefSettingsBase()
         {
             cefCustomSchemes = new List<CefCustomScheme>();
+            cefCommandLineArgs = new Dictionary<string, string>();
             BrowserSubprocessPath = "CefSharp.BrowserSubprocess.exe";
         }
 
@@ -34,7 +39,11 @@ namespace CefSharp
 
         public IEnumerable<CefCustomScheme> CefCustomSchemes { get { return cefCustomSchemes; } }
 
+        public IDictionary<string, string> CefCommandLineArgs { get { return cefCommandLineArgs; } }
+
         private readonly List<CefCustomScheme> cefCustomSchemes;
+
+        private readonly IDictionary<string, string> cefCommandLineArgs;
 
         /// <summary>
         /// Registers a custom scheme using the provided settings.

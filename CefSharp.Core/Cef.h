@@ -1,4 +1,4 @@
-// Copyright � 2010-2014 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2014 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -10,12 +10,14 @@
 
 #include "Internals/CefSharpApp.h"
 #include "Internals/CookieVisitor.h"
+#include "Internals/CompletionHandler.h"
 #include "Internals/StringUtils.h"
 #include "ManagedCefBrowserAdapter.h"
 #include "CefSettings.h"
 #include "SchemeHandlerWrapper.h"
 
-using namespace System::Collections::Generic;
+using namespace System::Collections::Generic; 
+using namespace System::Linq;
 using namespace System::Reflection;
 
 namespace CefSharp
@@ -29,12 +31,14 @@ namespace CefSharp
 
         static bool _initialized = false;
         static IDictionary<String^, Object^>^ _boundObjects;
+        static HashSet<IDisposable^>^ _disposables;
 
         static Cef()
         {
             _event = CreateEvent(NULL, FALSE, FALSE, NULL);
             _sync = gcnew Object();
             _boundObjects = gcnew Dictionary<String^, Object^>();
+            _disposables = gcnew HashSet<IDisposable^>();
         }
 
         static void IOT_SetCookie(const CefString& url, const CefCookie& cookie)
@@ -61,6 +65,20 @@ namespace CefSharp
         static IDictionary<String^, Object^>^ GetBoundObjects()
         {
             return _boundObjects;
+        }
+
+        static void AddDisposable(IDisposable^ item)
+        {
+            msclr::lock l(_sync);
+
+            _disposables->Add(item);
+        }
+
+        static void RemoveDisposable(IDisposable^ item)
+        {
+            msclr::lock l(_sync);
+
+            _disposables->Remove(item);
         }
 
     public:
@@ -124,7 +142,7 @@ namespace CefSharp
         }
 
         /// <summary>Initializes CefSharp with user-provided settings.</summary>
-        ///<param name="cefSettings">CefSharp configuration settings.</param>
+        /// <param name="cefSettings">CefSharp configuration settings.</param>
         /// <return>true if successful; otherwise, false.</return>
         static bool Initialize(CefSettings^ cefSettings)
         {
@@ -137,7 +155,7 @@ namespace CefSharp
                 CefMainArgs main_args;
                 CefRefPtr<CefSharpApp> app(new CefSharpApp(cefSettings));
 
-                int exitCode = CefExecuteProcess(main_args, app.get());
+                int exitCode = CefExecuteProcess(main_args, app.get(), NULL);
 
                 if (exitCode >= 0)
                 {
@@ -146,7 +164,7 @@ namespace CefSharp
                     return false;
                 }
 
-                success = CefInitialize(main_args, *(cefSettings->_cefSettings), app.get());
+                success = CefInitialize(main_args, *(cefSettings->_cefSettings), app.get(), NULL);
                 app->CompleteSchemeRegistrations();
                 _initialized = success;
 
@@ -297,7 +315,7 @@ namespace CefSharp
 
         /// <summary> Sets the directory path that will be used for storing cookie data. If <paramref name="path"/> is empty data will be stored in 
         /// memory only. Otherwise, data will be stored at the specified path. To persist session cookies (cookies without an expiry 
-        /// date or validity interval) set <paramref name="persist_session_cookies"/> to true. Session cookies are generally intended to be transient and 
+        /// date or validity interval) set <paramref name="persistSessionCookies"/> to true. Session cookies are generally intended to be transient and 
         /// most Web browsers do not persist them.</summary>
         /// <param name="path">The file path to write cookies to.</param>
         /// <param name="persistSessionCookies">A flag that determines whether session cookies will be persisted or not.</param>
@@ -316,13 +334,40 @@ namespace CefSharp
             }
         }
 
+        /// <summary> Flush the backing store (if any) to disk and execute the specified |handler| on the IO thread when done. Returns </summary>
+        /// <param name="handler">A user-provided ICompletionHandler implementation.</param>
+        /// <return>Returns false if cookies cannot be accessed.</return>
+        static bool FlushStore(ICompletionHandler^ handler)
+        {
+            CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager();
+
+            if (manager == nullptr)
+            {
+                return false;
+            }
+
+            auto wrapper = new CompletionHandler(handler);
+
+            return manager->FlushStore(static_cast<CefRefPtr<CefCompletionHandler>>(wrapper));
+        }
+
         /// <summary>Shuts down CefSharp and the underlying CEF infrastructure. This method is safe to call multiple times; it will only
         /// shut down CEF on the first call (all subsequent calls will be ignored).
         /// </summary>
         static void Shutdown()
         {
             if (IsInitialized)
-            {
+            { 
+                {
+                    msclr::lock l(_sync);
+                    for each(IDisposable^ diposable in Enumerable::ToList(_disposables))
+                    {
+                        delete diposable;
+                    }
+                }
+                GC::Collect();
+                GC::WaitForPendingFinalizers();
+
                 CefShutdown();
                 IsInitialized = false;
             }

@@ -144,7 +144,7 @@
                              Width="100"
                              Height="16"
                              Margin="3" />
-                <!-- TODO: Show hover link URL here -->
+                <TextBlock Text="{Binding StatusMessage}" />
                 <Separator />
                 <TextBlock Text="{Binding OutputMessage}" />
             </StatusBar>
@@ -168,7 +168,7 @@
                     </Rectangle.Fill>
                 </Rectangle>
 
-                <cefSharp:WebView x:Name="webView"
+                <cefSharp:ChromiumWebBrowser x:Name="browser"
                                   Opacity="{Binding ElementName=opacitySlider, Path=Value}"
                                   Address="{Binding Address, Mode=TwoWay}"
                                   Title="{Binding Title, Mode=OneWayToSource}"
@@ -202,9 +202,12 @@
                             <Separator />
                             <MenuItem Header="View Source"
                                       Command="{Binding WebBrowser.ViewSourceCommand}" />
+                            <MenuItem Header="Cut" Command="{Binding WebBrowser.CutCommand}"/>
+                            <MenuItem Header="Copy" Command="{Binding WebBrowser.CopyCommand}"/>
+                            <MenuItem Header="Paste" Command="{Binding WebBrowser.PasteCommand}"/>
                         </ContextMenu>
                     </FrameworkElement.ContextMenu>
-                </cefSharp:WebView>
+                </cefSharp:ChromiumWebBrowser>
             </Grid>
         </DockPanel>
     </Grid>

@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
+using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
@@ -10,59 +11,68 @@ using CefSharp.Wpf.Example.ViewModels;
 
 namespace CefSharp.Wpf.Example
 {
-	public partial class MainWindow : Window
-	{
-		private const string DefaultUrlForAddedTabs = "https://www.google.com";
+    public partial class MainWindow : Window
+    {
+        private const string DefaultUrlForAddedTabs = "https://www.google.com";
 
-		public ObservableCollection<BrowserTabViewModel> BrowserTabs { get; set; }
+        public ObservableCollection<BrowserTabViewModel> BrowserTabs { get; set; }
 
-		public MainWindow()
-		{
-			InitializeComponent();
-			DataContext = this;
+        public MainWindow()
+        {
+            InitializeComponent();
+            DataContext = this;
 
-			BrowserTabs = new ObservableCollection<BrowserTabViewModel>();
+            BrowserTabs = new ObservableCollection<BrowserTabViewModel>();
 
-			CommandBindings.Add(new CommandBinding(ApplicationCommands.New, OpenNewTab));
-			CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, CloseTab));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.New, OpenNewTab));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, CloseTab));
 
-			Loaded += MainWindowLoaded;
-		}
+            Loaded += MainWindowLoaded;
 
-		private void CloseTab(object sender, ExecutedRoutedEventArgs e)
-		{
-			if (BrowserTabs.Count > 0)
-			{
-				//Obtain the original source element for this event
-				var originalSource = (FrameworkElement)e.OriginalSource;
+            var bitness = Environment.Is64BitProcess ? "x64" : "x86";
+            Title += " - " + bitness;
+        }
 
-				if (originalSource is MainWindow)
-				{
-					BrowserTabs.RemoveAt(TabControl.SelectedIndex);
-				}
-				else
-				{
-					//Remove the matching DataContext from the BrowserTabs collection
-					BrowserTabs.Remove((BrowserTabViewModel)originalSource.DataContext);
-				}
-			}
-		}
+        private void CloseTab(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (BrowserTabs.Count > 0)
+            {
+                //Obtain the original source element for this event
+                var originalSource = (FrameworkElement)e.OriginalSource;
 
-		private void OpenNewTab(object sender, ExecutedRoutedEventArgs e)
-		{
-			CreateNewTab();
+                BrowserTabViewModel browserViewModel = null;
 
-			TabControl.SelectedIndex = TabControl.Items.Count - 1;
-		}
+                if (originalSource is MainWindow)
+                {
+                    browserViewModel = BrowserTabs[TabControl.SelectedIndex];
+                    BrowserTabs.RemoveAt(TabControl.SelectedIndex);
+                }
+                else
+                {
+                    //Remove the matching DataContext from the BrowserTabs collection
+                    browserViewModel = (BrowserTabViewModel)originalSource.DataContext;
+                    BrowserTabs.Remove(browserViewModel);
+                }
 
-		private void MainWindowLoaded(object sender, RoutedEventArgs e)
-		{
-			CreateNewTab(ExamplePresenter.DefaultUrl, true);
-		}
+                browserViewModel.WebBrowser.Dispose();
+            }
+        }
 
-		private void CreateNewTab(string url = DefaultUrlForAddedTabs, bool showSideBar = false)
-		{
-			BrowserTabs.Add(new BrowserTabViewModel(url) { ShowSidebar = showSideBar });
-		}
-	}
+        private void OpenNewTab(object sender, ExecutedRoutedEventArgs e)
+        {
+            CreateNewTab();
+
+            TabControl.SelectedIndex = TabControl.Items.Count - 1;
+        }
+
+        private void MainWindowLoaded(object sender, RoutedEventArgs e)
+        {
+            CreateNewTab(CefExample.DefaultUrl, true);
+        }
+
+        private void CreateNewTab(string url = DefaultUrlForAddedTabs, bool showSideBar = false)
+        {
+            BrowserTabs.Add(new BrowserTabViewModel(url) { ShowSidebar = showSideBar });
+        }
+    }
 }

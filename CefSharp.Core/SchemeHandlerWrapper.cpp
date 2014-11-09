@@ -12,7 +12,7 @@ using namespace System::IO;
 
 namespace CefSharp
 {
-    CefResponse::HeaderMap SchemeHandlerWrapper::ToHeaderMap(IDictionary<String^, String^>^ headers)
+    CefResponse::HeaderMap SchemeHandlerWrapper::ToHeaderMap(NameValueCollection^ headers)
     {
         CefResponse::HeaderMap result;
 
@@ -21,9 +21,10 @@ namespace CefSharp
             return result;
         }
 
-        for each (KeyValuePair<String^, String^> header in headers)
+        for each (String^ key in headers)
         {
-            result.insert(std::pair<CefString, CefString>(StringUtils::ToNative(header.Key), StringUtils::ToNative(header.Value)));
+            String^ value = headers[key];
+            result.insert(std::pair<CefString, CefString>(StringUtils::ToNative(key), StringUtils::ToNative(value)));
         }
 
         return result;
@@ -60,7 +61,11 @@ namespace CefSharp
 
         _headers = ToHeaderMap(response->ResponseHeaders);
 
-        _callback->Continue();
+        // If CEF has cancelled the initial request, throw away a response that comes afterwards.
+        if (_callback != nullptr)
+        {
+            _callback->Continue();
+        }
 
         // Must be done AFTER CEF has been allowed to consume the headers etc. After this call is made, the SchemeHandlerWrapper
         // instance has likely been deallocated.

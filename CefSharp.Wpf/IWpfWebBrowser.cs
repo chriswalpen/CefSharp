@@ -9,60 +9,39 @@ namespace CefSharp.Wpf
     public interface IWpfWebBrowser : IWebBrowser
     {
         /// <summary>
-        /// The address (URL) which the browser control is currently displaying. Can be set to a simplified URL
-        /// (e.g. www.google.com) or a full URL (e.g. http://www.google.com). Will automatically be updated as the user
-        /// navigates to another page (e.g. by clickig on a link).
-        /// </summary>
-        /// <remarks>This property is a Dependency Property and fully supports data binding.</remarks>
-        string Address { get; set; }
-
-        /// <summary>
-        /// A flag that indicates whether the control is currently loading one or more web pages (true) or not (false).
-        /// </summary>
-        /// <remarks>This property is a Dependency Property and fully supports data binding.</remarks>
-        bool IsLoading { get; set; }
-
-        /// <summary>
-        /// The title of the web page being currently displayed.
-        /// </summary>
-        /// <remarks>This property is a Dependency Property and fully supports data binding.</remarks>
-        string Title { get; }
-
-        /// <summary>
-        /// Command which navigates to the previous page in the browser history. Will automatically be enabled/disabled depending
-        /// on the browser state.
+        /// Navigates to the previous page in the browser history. Will automatically be enabled/disabled depending on the
+        /// browser state.
         /// </summary>
         ICommand BackCommand { get; }
 
         /// <summary>
-        /// Command which navigates to the next page in the browser history. Will automatically be enabled/disabled depending on
-        /// the browser state.
+        /// Navigates to the next page in the browser history. Will automatically be enabled/disabled depending on the
+        /// browser state.
         /// </summary>
         ICommand ForwardCommand { get; }
 
         /// <summary>
-        /// Command which reloads the content of the current page. Will automatically be enabled/disabled depending on the
-        /// browser state.
+        /// Reloads the content of the current page. Will automatically be enabled/disabled depending on the browser state.
         /// </summary>
         ICommand ReloadCommand { get; }
 
         /// <summary>
-        /// Command which prints the current browser contents.
+        /// Prints the current browser contents.
         /// </summary>
         ICommand PrintCommand { get; }
 
         /// <summary>
-        /// Command which increases the zoom level
+        /// Increases the zoom level.
         /// </summary>
         ICommand ZoomInCommand { get; }
 
         /// <summary>
-        /// Command which decreases the zoom level
+        /// Decreases the zoom level.
         /// </summary>
         ICommand ZoomOutCommand { get; }
 
         /// <summary>
-        /// Command which resets the zoom level to default
+        /// Resets the zoom level to the default. (100%)
         /// </summary>
         ICommand ZoomResetCommand { get; }
 
@@ -73,36 +52,43 @@ namespace CefSharp.Wpf
         ICommand ViewSourceCommand { get; }
 
         /// <summary>
-        /// Opens up a new program window (using the default text editor) where the source code of the currently displayed web
-        /// page is shown.
+        /// Command which cleans up the Resources used by the ChromiumWebBrowser
         /// </summary>
-        void ViewSource();
+        ICommand CleanupCommand { get; }
 
         /// <summary>
-        /// Attempts to give focus to the WebBrowser control.
+        /// Stops loading the current page.
         /// </summary>
-        /// <returns><c>true</c> if keyboard focus and logical focus were set to this element; <c>false</c> if only logical focus
-        /// was set to this element, or if the call to this method did not force the focus to change.</returns>
-        bool Focus();
+        ICommand StopCommand { get; }
 
         /// <summary>
-        /// Reloads the current WebView
+        /// Cut selected text to the clipboard.
         /// </summary>
-        void Reload();
+        ICommand CutCommand { get; }
 
         /// <summary>
-        /// Reloads the current WebView, optionally ignoring the cache
-        /// (which means the whole page including all .css, .js etc. resources will be re-fetched)
+        /// Copy selected text to the clipboard.
         /// </summary>
-        /// <param name="ignoreCache"><c>true</c> A reload is performed ignoring borwser cache; <c>false</c> A reload is
-        /// performed using browser cache</param>
-        void Reload(bool ignoreCache);
+        ICommand CopyCommand { get; }
 
         /// <summary>
-        /// The zoom level at which the browser control is currently displaying. Can be set to 0 to clear the zoom level (resets to
-        /// default zoom level)
+        /// Paste text from the clipboard.
         /// </summary>
-        /// <remarks>This property is a Dependency Property and fully supports data binding.</remarks>
-        double ZoomLevel { get; set; }
+        ICommand PasteCommand { get; }
+
+        /// <summary>
+        /// Select all text.
+        /// </summary>
+        ICommand SelectAllCommand { get; }
+
+        /// <summary>
+        /// Undo last action.
+        /// </summary>
+        ICommand UndoCommand { get; }
+
+        /// <summary>
+        /// Redo last action.
+        /// </summary>
+        ICommand RedoCommand { get; }
     }
 }

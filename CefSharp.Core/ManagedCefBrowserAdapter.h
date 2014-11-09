@@ -1,4 +1,4 @@
-// Copyright © 2010-2014 The CefSharp Authors. All rights reserved.
+// Copyright Â© 2010-2014 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -8,6 +8,8 @@
 #include "BrowserSettings.h"
 #include "MouseButtonType.h"
 #include "Internals/RenderClientAdapter.h"
+#include "Internals/MCefRefPtr.h"
+#include "Internals/StringVisitor.h"
 
 using namespace CefSharp::Internals;
 using namespace System::Diagnostics;
@@ -15,43 +17,31 @@ using namespace System::ServiceModel;
 
 namespace CefSharp
 {
-    private ref class ManagedCefBrowserAdapter : ISubProcessCallback
+    private ref class ManagedCefBrowserAdapter : public ObjectBase, ISubProcessCallback
     {
-    private:
-        RenderClientAdapter* _renderClientAdapter;
+        MCefRefPtr<RenderClientAdapter> _renderClientAdapter;
         ISubProcessProxy^ _javaScriptProxy;
         IWebBrowserInternal^ _webBrowserInternal;
         String^ _address;
         
-    public:
-        property String^ DevToolsUrl
+    protected:
+        virtual void DoDispose(bool isDisposing) override
         {
-            String^ get()
-            {
-                auto cefHost = _renderClientAdapter->TryGetCefHost();
+            Close();
 
-                if (cefHost != nullptr)
-                {
-                    return StringUtils::ToClr(cefHost->GetDevToolsURL(true));
-                }
-                else
-                {
-                    return nullptr;
-                }
-            }
-        }
+            _renderClientAdapter = nullptr;
+            _javaScriptProxy = nullptr;
+            _webBrowserInternal = nullptr;
+            _address = nullptr;
 
+            ObjectBase::DoDispose(isDisposing);
+        };
+
+    public:
         ManagedCefBrowserAdapter(IWebBrowserInternal^ webBrowserInternal)
         {
             _webBrowserInternal = webBrowserInternal;
             _renderClientAdapter = new RenderClientAdapter(webBrowserInternal, this);
-        }
-
-        ~ManagedCefBrowserAdapter()
-        {
-            this->Close();
-            _renderClientAdapter = nullptr;
-            _address = nullptr;
         }
 
         void CreateOffscreenBrowser(BrowserSettings^ browserSettings)
@@ -62,8 +52,11 @@ namespace CefSharp
             window.SetTransparentPainting(true);
             CefString addressNative = StringUtils::ToNative("about:blank");
 
-            CefBrowserHost::CreateBrowser(window, _renderClientAdapter, addressNative,
-                *(CefBrowserSettings*) browserSettings->_internalBrowserSettings, NULL);
+            if (!CefBrowserHost::CreateBrowser(window, _renderClientAdapter.get(), addressNative,
+                *(CefBrowserSettings*) browserSettings->_internalBrowserSettings, NULL))
+            {
+                throw gcnew InvalidOperationException( "Failed to create offscreen browser. Call Cef.Initialize() first." );
+            }
         }
 
         void Close()
@@ -87,16 +80,18 @@ namespace CefSharp
             }
         }
 
-
         void OnInitialized()
         {
-            _webBrowserInternal->OnInitialized();
-
-            auto address = _address;
-
-            if ( address != nullptr )
+            if(_webBrowserInternal != nullptr)
             {
-                LoadUrl(address);
+                _webBrowserInternal->OnInitialized();
+
+                auto address = _address;
+
+                if ( address != nullptr )
+                {
+                    LoadUrl(address);
+                }
             }
         };
 
@@ -206,6 +201,16 @@ namespace CefSharp
             }
         }
 
+        void Stop()
+        {
+            auto cefBrowser = _renderClientAdapter->GetCefBrowser();
+
+            if (cefBrowser != nullptr)
+            {
+                cefBrowser->StopLoad();
+            }
+        }
+
         void GoBack()
         {
             auto cefBrowser = _renderClientAdapter->GetCefBrowser();
@@ -236,6 +241,26 @@ namespace CefSharp
             }
         }
 
+        void Find(int identifier, String^ searchText, bool forward, bool matchCase, bool findNext)
+        {
+            auto cefHost = _renderClientAdapter->TryGetCefHost();
+
+            if (cefHost != nullptr)
+            {
+                cefHost->Find(identifier, StringUtils::ToNative(searchText), forward, matchCase, findNext);
+            }
+        }
+
+        void StopFinding(bool clearSelection)
+        {
+            auto cefHost = _renderClientAdapter->TryGetCefHost();
+
+            if (cefHost != nullptr)
+            {
+                cefHost->StopFinding(clearSelection);
+            }
+        }
+        
         void Reload()
         {
             Reload(false);
@@ -268,6 +293,28 @@ namespace CefSharp
             }
         }
 
+        void GetSource(IStringVisitor^ visitor)
+        {
+            auto cefFrame = _renderClientAdapter->TryGetCefMainFrame();
+
+            if (cefFrame != nullptr)
+            {
+                auto stringVisitor = new StringVisitor(visitor);
+                cefFrame->GetSource(stringVisitor);
+            }
+        }
+
+        void GetText(IStringVisitor^ visitor)
+        {
+            auto cefFrame = _renderClientAdapter->TryGetCefMainFrame();
+
+            if (cefFrame != nullptr)
+            {
+                auto stringVisitor = new StringVisitor(visitor);
+                cefFrame->GetText(stringVisitor);
+            }
+        }
+
         void Cut()
         {
             auto cefFrame = _renderClientAdapter->TryGetCefMainFrame(); 
@@ -295,6 +342,16 @@ namespace CefSharp
             if (cefFrame != nullptr)
             {
                 cefFrame->Paste();
+            }
+        }
+
+        void Delete()
+        {
+            auto cefFrame = _renderClientAdapter->TryGetCefMainFrame();
+
+            if (cefFrame != nullptr)
+            {
+                cefFrame->Delete();
             }
         }
 
@@ -386,7 +443,17 @@ namespace CefSharp
             }
         }
 
-        virtual void Error( Exception^ ex )
+        void ShowDevTools()
+        {
+            _renderClientAdapter->ShowDevTools();
+        }
+
+        void CloseDevTools()
+        {
+            _renderClientAdapter->CloseDevTools();
+        }
+
+        virtual void Error(Exception^ ex)
         {
 
         }
@@ -400,11 +467,11 @@ namespace CefSharp
             window.SetAsChild(hwnd, rect);
             CefString addressNative = StringUtils::ToNative(address);
 
-            CefBrowserHost::CreateBrowser(window, _renderClientAdapter, addressNative,
+            CefBrowserHost::CreateBrowser(window, _renderClientAdapter.get(), addressNative,
                 *(CefBrowserSettings*) browserSettings->_internalBrowserSettings, NULL);
         }
 
-        void OnSizeChanged(IntPtr^ sourceHandle)
+        void OnPaint(IntPtr^ sourceHandle)
         {
             HWND hWnd = static_cast<HWND>(sourceHandle->ToPointer());
             RECT rect;

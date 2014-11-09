@@ -54,6 +54,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <DocumentationFile>bin\x86\Release\CefSharp.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -72,6 +73,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <DocumentationFile>bin\x64\Release\CefSharp.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -86,6 +88,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CefFileDialogMode.cs" />
+    <Compile Include="IsBrowserInitializedChangedEventArgs.cs" />
+    <Compile Include="CefTerminationStatus.cs" />
+    <Compile Include="IDialogHandler.cs" />
+    <Compile Include="AddressChangedEventArgs.cs" />
+    <Compile Include="DownloadItem.cs" />
+    <Compile Include="CefEventFlags.cs" />
+    <Compile Include="IsLoadingChangedEventArgs.cs" />
+    <Compile Include="IStringVisitor.cs" />
+    <Compile Include="LoadErrorEventArgs.cs" />
+    <Compile Include="FrameLoadStartEventArgs.cs" />
+    <Compile Include="KeyType.cs" />
+    <Compile Include="TransitionType.cs" />
+    <Compile Include="NavStateChangedEventArgs.cs" />
+    <Compile Include="ICompletionHandler.cs" />
     <Compile Include="Internals\BitmapInfo.cs" />
     <Compile Include="Internals\ManagedCefApp.cs" />
     <Compile Include="CefCustomScheme.cs" />
@@ -100,6 +117,7 @@
     <Compile Include="ILifeSpanHandler.cs" />
     <Compile Include="IMenuHandler.cs" />
     <Compile Include="Internals\IRenderWebBrowser.cs" />
+    <Compile Include="IWebPluginInfo.cs" />
     <Compile Include="IRequest.cs" />
     <Compile Include="IRequestHandler.cs" />
     <Compile Include="IRequestResponse.cs" />
@@ -113,13 +131,16 @@
     <Compile Include="Internals\CefSubprocess.cs" />
     <Compile Include="Internals\SubProcessServiceHost.cs" />
     <Compile Include="IWinFormsWebBrowser.cs" />
-    <Compile Include="LoadedCompletedEventArgs.cs" />
+    <Compile Include="FrameLoadEndEventArgs.cs" />
     <Compile Include="LogSeverity.cs" />
     <Compile Include="ObjectBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScriptException.cs" />
     <Compile Include="Internals\SubProcessProxy.cs" />
     <Compile Include="Internals\SubProcessProxySupport.cs" />
+    <Compile Include="StatusMessageEventHandler.cs" />
+    <Compile Include="TaskStringVisitor.cs" />
+    <Compile Include="TitleChangedEventArgs.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

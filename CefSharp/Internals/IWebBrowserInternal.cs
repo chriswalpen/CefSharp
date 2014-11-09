@@ -1,14 +1,14 @@
-﻿using System.Collections.Generic;
+﻿// Copyright © 2010-2014 The CefSharp Authors. All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
+
+using System.Collections.Generic;
 
 namespace CefSharp.Internals
 {
     public interface IWebBrowserInternal : IWebBrowser
     {
         IDictionary<string, object> BoundObjects { get; }
-
-        ILifeSpanHandler LifeSpanHandler { get; set; }
-        IKeyboardHandler KeyboardHandler { get; set; }
-        IJsDialogHandler JsDialogHandler { get; set; }
 
         void OnInitialized();
 
@@ -17,13 +17,12 @@ namespace CefSharp.Internals
         void SetNavState(bool canGoBack, bool canGoForward, bool canReload);
         void SetTitle(string title);
         void SetTooltipText(string tooltipText);
-        void ShowDevTools();
-        void CloseDevTools();
 
-        void OnFrameLoadStart(string url);
-        void OnFrameLoadEnd(string url);
+        void OnFrameLoadStart(string url, bool isMainFrame);
+        void OnFrameLoadEnd(string url, bool isMainFrame, int httpStatusCode);
         void OnTakeFocus(bool next);
         void OnConsoleMessage(string message, string source, int line);
+        void OnStatusMessage(string value);
         void OnLoadError(string url, CefErrorCode errorCode, string errorText);
     }
 }

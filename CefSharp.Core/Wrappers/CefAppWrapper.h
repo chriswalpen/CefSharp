@@ -6,6 +6,8 @@
 #include "CefSubprocessWrapper.h"
 #include "include/cef_app.h"
 
+using namespace System::Collections::Generic;
+
 namespace CefSharp
 {
     class CefAppUnmanagedWrapper;
@@ -13,9 +15,10 @@ namespace CefSharp
     public ref class CefAppWrapper
     {
     private:
-        CefRefPtr<CefAppUnmanagedWrapper>* cefApp;
+        MCefRefPtr<CefAppUnmanagedWrapper> cefApp;
     internal:
         CefSubprocess^ _managedApp;
+        List<CefBrowserWrapper^>^ browserWrappers;
 
     public:
         CefAppWrapper(CefSubprocess^ managedApp);
@@ -27,12 +30,16 @@ namespace CefSharp
     {
     private:
         gcroot<CefAppWrapper^> _cefAppWrapper;
-        CefRefPtr<CefBrowser> _browser;
 
     public:
-        CefAppUnmanagedWrapper(CefAppWrapper^ cefAppWrapper)
+        CefAppUnmanagedWrapper(CefAppWrapper^ cefAppWrapper) :
+            _cefAppWrapper(cefAppWrapper)
         {
-            _cefAppWrapper = cefAppWrapper;
+        }
+
+        ~CefAppUnmanagedWrapper()
+        {
+            _cefAppWrapper = nullptr;
         }
 
         virtual DECL CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() OVERRIDE
@@ -42,10 +49,30 @@ namespace CefSharp
 
         virtual DECL void CefAppUnmanagedWrapper::OnBrowserCreated(CefRefPtr<CefBrowser> browser) OVERRIDE
         {
-            _browser = browser;
-            // TODO: Could destroy this CefBrowserWrapper in OnBrowserDestroyed(), but it doesn't seem to be reliably called...
-            _cefAppWrapper->_managedApp->OnBrowserCreated(gcnew CefBrowserWrapper(browser));
-        }
+            auto wrapper = gcnew CefBrowserWrapper(browser);
+            _cefAppWrapper->browserWrappers->Add(wrapper);
+            _cefAppWrapper->_managedApp->OnBrowserCreated(wrapper);
+        };
+
+        virtual DECL void CefAppUnmanagedWrapper::OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) OVERRIDE
+        {
+            auto browserId = browser->GetIdentifier();
+            CefBrowserWrapper^ wrapper = nullptr;
+            for (int i = 0; i < _cefAppWrapper->browserWrappers->Count; i++)
+            {
+                if (_cefAppWrapper->browserWrappers[i]->BrowserId == browserId)
+                {
+                    wrapper = _cefAppWrapper->browserWrappers[i];
+                    _cefAppWrapper->browserWrappers->RemoveAt(i);
+                    break;
+                }
+            }
+
+            if (wrapper != nullptr)
+            {
+                delete wrapper;
+            }
+        };
 
         IMPLEMENT_REFCOUNTING(CefAppUnmanagedWrapper);
     };

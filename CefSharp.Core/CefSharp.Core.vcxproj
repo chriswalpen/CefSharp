@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\cef.sdk.3.1650.1562-pre2\build\cef.sdk.props" Condition="Exists('..\packages\cef.sdk.3.1650.1562-pre2\build\cef.sdk.props')" />
+  <Import Project="..\packages\cef.sdk.3.1750.1738\build\cef.sdk.props" Condition="Exists('..\packages\cef.sdk.3.1750.1738\build\cef.sdk.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -131,6 +131,7 @@
       <GenerateMapFile>false</GenerateMapFile>
       <MapExports>false</MapExports>
       <KeyFile>$(LinkKeyFile)</KeyFile>
+      <AdditionalOptions>/ignore:4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -216,10 +217,14 @@
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp" />
     <ClCompile Include="CefAppWrapper.cpp" />
+    <ClCompile Include="Internals\DownloadAdapter.cpp" />
+    <ClCompile Include="Internals\CefWebPluginInfoWrapper.cpp" />
     <ClCompile Include="Internals\ClientAdapter.cpp" />
+    <ClCompile Include="Internals\CompletionHandler.cpp" />
     <ClCompile Include="Internals\CookieVisitor.cpp" />
     <ClCompile Include="Internals\CefRequestWrapper.cpp" />
     <ClCompile Include="Internals\RequestResponse.cpp" />
+    <ClCompile Include="Internals\StringVisitor.cpp" />
     <ClCompile Include="SchemeHandlerResponse.cpp" />
     <ClCompile Include="SchemeHandlerWrapper.cpp" />
     <ClCompile Include="Stdafx.cpp">
@@ -235,6 +240,8 @@
   <ItemGroup>
     <ClInclude Include="BrowserSettings.h" />
     <ClInclude Include="Cef.h" />
+    <ClInclude Include="Internals\CompletionHandler.h" />
+    <ClInclude Include="Internals\StringVisitor.h" />
     <ClInclude Include="Wrappers\CefAppWrapper.h" />
     <ClInclude Include="Internals\DownloadAdapter.h" />
     <ClInclude Include="Internals\ClientAdapter.h" />
@@ -255,6 +262,7 @@
     <ClInclude Include="TypeUtils.h" />
     <ClInclude Include="vcclr_local.h" />
     <ClInclude Include="Wrappers\CefSubprocessWrapper.h" />
+    <ClInclude Include="Internals\CefWebPluginInfoWrapper.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CefSharp\CefSharp.csproj">
@@ -275,6 +283,6 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\cef.sdk.3.1650.1562-pre2\build\cef.sdk.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\cef.sdk.3.1650.1562-pre2\build\cef.sdk.props'))" />
+    <Error Condition="!Exists('..\packages\cef.sdk.3.1750.1738\build\cef.sdk.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\cef.sdk.3.1750.1738\build\cef.sdk.props'))" />
   </Target>
 </Project>

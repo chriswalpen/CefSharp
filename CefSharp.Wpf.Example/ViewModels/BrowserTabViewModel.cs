@@ -34,6 +34,13 @@ namespace CefSharp.Wpf.Example.ViewModels
             set { PropertyChanged.ChangeAndNotify(ref outputMessage, value, () => OutputMessage); }
         }
 
+        private string statusMessage;
+        public string StatusMessage
+        {
+            get { return statusMessage; }
+            set { PropertyChanged.ChangeAndNotify(ref statusMessage, value, () => StatusMessage); }
+        }
+
         private string title;
         public string Title
         {
@@ -63,10 +70,10 @@ namespace CefSharp.Wpf.Example.ViewModels
             set { PropertyChanged.ChangeAndNotify(ref showSidebar, value, () => ShowSidebar); }
         }
 
-        public DelegateCommand GoCommand { get; set; }
-        public DelegateCommand HomeCommand { get; set; }
-        public DelegateCommand<string> ExecuteJavaScriptCommand { get; set; }
-        public DelegateCommand<string> EvaluateJavaScriptCommand { get; set; }
+        public ICommand GoCommand { get; set; }
+        public ICommand HomeCommand { get; set; }
+        public ICommand ExecuteJavaScriptCommand { get; set; }
+        public ICommand EvaluateJavaScriptCommand { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -76,7 +83,7 @@ namespace CefSharp.Wpf.Example.ViewModels
             AddressEditable = Address;
 
             GoCommand = new DelegateCommand(Go, () => !String.IsNullOrWhiteSpace(Address));
-            HomeCommand = new DelegateCommand(() => AddressEditable = Address = ExamplePresenter.DefaultUrl);
+            HomeCommand = new DelegateCommand(() => AddressEditable = Address = CefExample.DefaultUrl);
             ExecuteJavaScriptCommand = new DelegateCommand<string>(ExecuteJavaScript, s => !String.IsNullOrWhiteSpace(s));
             EvaluateJavaScriptCommand = new DelegateCommand<string>(EvaluateJavaScript, s => !String.IsNullOrWhiteSpace(s));
 
@@ -122,12 +129,13 @@ namespace CefSharp.Wpf.Example.ViewModels
                     if (WebBrowser != null)
                     {
                         WebBrowser.ConsoleMessage += OnWebBrowserConsoleMessage;
+                        WebBrowser.StatusMessage += OnWebBrowserStatusMessage;
                         WebBrowser.LoadError += OnWebBrowserLoadError;
 
                         // TODO: This is a bit of a hack. It would be nicer/cleaner to give the webBrowser focus in the Go()
                         // TODO: method, but it seems like "something" gets messed up (= doesn't work correctly) if we give it
                         // TODO: focus "too early" in the loading process...
-                        WebBrowser.LoadCompleted += delegate { Application.Current.Dispatcher.BeginInvoke((Action)(() => webBrowser.Focus())); };
+                        WebBrowser.FrameLoadEnd += delegate { Application.Current.Dispatcher.BeginInvoke((Action)(() => webBrowser.Focus())); };
                     }
 
                     break;
@@ -139,17 +147,22 @@ namespace CefSharp.Wpf.Example.ViewModels
             OutputMessage = e.Message;
         }
 
-        private void OnWebBrowserLoadError(string failedUrl, CefErrorCode errorCode, string errorText)
+        private void OnWebBrowserStatusMessage(object sender, StatusMessageEventArgs e)
+        {
+            StatusMessage = e.Value;
+        }
+
+        private void OnWebBrowserLoadError(object sender, LoadErrorEventArgs args)
         {
             // Don't display an error for downloaded files where the user aborted the download.
-            if (errorCode == CefErrorCode.Aborted)
+            if (args.ErrorCode == CefErrorCode.Aborted)
                 return;
 
-            var errorMessage = "<html><body><h2>Failed to load URL " + failedUrl +
-                  " with error " + errorText + " (" + errorCode +
+            var errorMessage = "<html><body><h2>Failed to load URL " + args.FailedUrl +
+                  " with error " + args.ErrorText + " (" + args.ErrorCode +
                   ").</h2></body></html>";
 
-            webBrowser.LoadHtml(errorMessage, failedUrl);
+            webBrowser.LoadHtml(errorMessage, args.FailedUrl);
         }
 
         private void Go()

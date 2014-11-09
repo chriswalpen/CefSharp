@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright © 2010-2014 The CefSharp Authors. All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
+
+using System;
 using System.ServiceModel;
 using System.ServiceModel.Description;
 
@@ -18,7 +22,7 @@ namespace CefSharp.Internals
             var host = new SubProcessServiceHost();
             AddDebugBehavior(host);
 
-            //use absultadress for hosting 
+            //use absolute address for hosting 
             //http://stackoverflow.com/questions/10362246/two-unique-named-pipes-conflicting-and-invalidcredentialexception
             var serviceName = SubProcessProxySupport.GetServiceName(parentProcessId, browserId);
 
@@ -49,6 +53,7 @@ namespace CefSharp.Internals
                 var javascriptProxy = channelFactory.CreateChannel();
                 javascriptProxy.Terminate();
             }
+            // ReSharper disable once EmptyGeneralCatchClause
             catch
             {
                 // We assume errors at this point are caused by things like the endpoint not being present (which will happen in

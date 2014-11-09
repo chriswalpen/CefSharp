@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿// Copyright © 2010-2014 The CefSharp Authors. All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
+
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 
@@ -39,18 +43,17 @@ namespace CefSharp.Internals
                 return;
             }
 
-            var parentProcessId = channelArgument
+            var parentProcessIdString = channelArgument
                 .Substring(channelPrefix.Length)
                 .Split('.')
                 .First();
-            ParentProcessId = int.Parse(parentProcessId);
+            parentProcessId = int.Parse(parentProcessIdString);
         }
 
 
         private SubProcessServiceHost javascriptServiceHost;
         private CefBrowserBase browser;
-
-        public int? ParentProcessId { get; private set; }
+        private int? parentProcessId;
 
         public CefBrowserBase Browser
         {
@@ -66,12 +69,12 @@ namespace CefSharp.Internals
         {
             browser = cefBrowserWrapper;
 
-            if (ParentProcessId == null)
+            if (parentProcessId == null)
             {
                 return;
             }
 
-            Task.Factory.StartNew(() => javascriptServiceHost = SubProcessServiceHost.Create(ParentProcessId.Value, cefBrowserWrapper.BrowserId));
+            Task.Factory.StartNew(() => javascriptServiceHost = SubProcessServiceHost.Create(parentProcessId.Value, cefBrowserWrapper.BrowserId));
         }
     }
 }
