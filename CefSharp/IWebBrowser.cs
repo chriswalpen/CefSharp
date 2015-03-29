@@ -3,6 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace CefSharp
@@ -40,17 +41,45 @@ namespace CefSharp
         event EventHandler<LoadErrorEventArgs> LoadError;
 
         /// <summary>
+        /// Event handler that will get called when the Navigation state has changed (Maps to OnLoadingStateChange in Cef).
+        /// This event will be fired twice. Once when loading is initiated either programmatically or
+        /// by user action, and once when loading is terminated due to completion, cancellation of failure. 
+        /// </summary>
+        event EventHandler<NavStateChangedEventArgs> NavStateChanged;
+
+        /// <summary>
         /// Loads the specified URL.
         /// </summary>
         /// <param name="url">The URL to be loaded.</param>
         void Load(string url);
 
         /// <summary>
-        /// Loads custom HTML content into the web browser.
+        /// Registers and loads a <see cref="ResourceHandler"/> that represents the HTML content.
         /// </summary>
+        /// <remarks>
+        /// `Cef` Native `LoadHtml` is unpredictable and only works sometimes, this method wraps
+        /// the provided HTML in a <see cref="ResourceHandler"/> and loads the provided url using
+        /// the <see cref="Load"/> method.
+        /// Defaults to using <see cref="Encoding.UTF8"/> for character encoding 
+        /// The url must start with a valid schema, other uri's such as about:blank are invalid
+        /// A valid example looks like http://test/page
+        /// </remarks>
         /// <param name="html">The HTML content.</param>
         /// <param name="url">The URL that will be treated as the address of the content.</param>
         void LoadHtml(string html, string url);
+
+        /// <summary>
+        /// Registers and loads a <see cref="ResourceHandler"/> that represents the HTML content.
+        /// </summary>
+        /// <remarks>
+        /// `Cef` Native `LoadHtml` is unpredictable and only works sometimes, this method wraps
+        /// the provided HTML in a <see cref="ResourceHandler"/> and loads the provided url using
+        /// the <see cref="Load"/> method.
+        /// </remarks>
+        /// <param name="html">The HTML content.</param>
+        /// <param name="url">The URL that will be treated as the address of the content.</param>
+        /// <param name="encoding">Character Encoding</param>
+        void LoadHtml(string html, string url, Encoding encoding);
 
         /// <summary>
         /// Registers a Javascript object in this specific browser instance.
@@ -67,11 +96,13 @@ namespace CefSharp
         void ExecuteScriptAsync(string script);
 
         /// <summary>
-        /// Execute some Javascript code in the context of this WebBrowser, and return the result of the evaluation.
+        /// Execute some Javascript code in the context of this WebBrowser, and return the result of the evaluation
+        /// in an Async fashion
         /// </summary>
         /// <param name="script">The Javascript code that should be executed.</param>
         /// <param name="timeout">The timeout after which the Javascript code execution should be aborted.</param>
-        object EvaluateScript(string script, TimeSpan? timeout = null);
+        /// /// <returns>A Task that can be awaited to perform the script execution</returns>
+        Task<JavascriptResponse> EvaluateScriptAsync(string script, TimeSpan? timeout = null);
 
         /// <summary>
         /// Implement <see cref="IDialogHandler"/> and assign to handle dialog events.
@@ -87,21 +118,46 @@ namespace CefSharp
         /// Implement <see cref="ILifeSpanHandler"/> and assign to handle events related to popups.
         /// </summary>
         ILifeSpanHandler LifeSpanHandler { get; set; }
-        
+
         /// <summary>
         /// Implement <see cref="IKeyboardHandler"/> and assign to handle events related to key press.
         /// </summary>
         IKeyboardHandler KeyboardHandler { get; set; }
-        
+
         /// <summary>
         /// Implement <see cref="IJsDialogHandler"/> and assign to handle events related to JavaScript Dialogs.
         /// </summary>
         IJsDialogHandler JsDialogHandler { get; set; }
-        
+
+        /// <summary>
+        /// Implement <see cref="IDragHandler"/> and assign to handle events related to dragging.
+        /// </summary>
+        IDragHandler DragHandler { get; set; }
+
         /// <summary>
         /// Implement <see cref="IDownloadHandler"/> and assign to handle events related to downloading files.
         /// </summary>
         IDownloadHandler DownloadHandler { get; set; }
+
+        /// <summary>
+        /// Implement <see cref="IMenuHandler"/> and assign to handle events related to the browser context menu
+        /// </summary>
+        IMenuHandler MenuHandler { get; set; }
+
+        /// <summary>
+        /// Implement <see cref="IFocusHandler"/> and assign to handle events related to the browser component's focus
+        /// </summary>
+        IFocusHandler FocusHandler { get; set; }
+
+        /// <summary>
+        /// Implement <see cref="IResourceHandlerFactory"/> and control the loading of resources
+        /// </summary>
+        IResourceHandlerFactory ResourceHandlerFactory { get; set; }
+
+        /// <summary>
+        /// Implement <see cref="IGeolocationHandler"/> and assign to handle requests for permission to use geolocation.
+        /// </summary>
+        IGeolocationHandler GeolocationHandler { get; set; }
 
         /// <summary>
         /// A flag that indicates whether the WebBrowser is initialized (true) or not (false).
@@ -249,6 +305,28 @@ namespace CefSharp
         /// <summary>
         /// Explicitly close the developer tools window if one exists for this browser instance.
         /// </summary>
-        void CloseDevTools();               
+        void CloseDevTools();   
+  
+        /// <summary>
+        /// If a misspelled word is currently selected in an editable node calling
+        /// this method will replace it with the specified word. 
+        /// </summary>
+        /// <param name="word">The new word that will replace the currently selected word.</param>
+        void ReplaceMisspelling(string word);
+
+        /// <summary>
+        /// Add the specified word to the spelling dictionary.
+        /// </summary>
+        /// <param name="word">The new word that will be added to the dictionary.</param>
+        void AddWordToDictionary(string word);
+        
+        /// <summary>
+        /// Send a mouse wheel event to the browser.
+        /// </summary>
+        /// <param name="x">X-Axis coordinate relative to the upper-left corner of the view.</param>
+        /// <param name="y">Y-Axis coordinate relative to the upper-left corner of the view.</param>
+        /// <param name="deltaX">Movement delta for X direction.</param>
+        /// <param name="deltaY">movement delta for Y direction.</param>
+        void SendMouseWheelEvent(int x, int y, int deltaX, int deltaY);
     }
 }

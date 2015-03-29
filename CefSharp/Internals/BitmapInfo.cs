@@ -3,10 +3,11 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
+using System.Collections.Generic;
 
 namespace CefSharp.Internals
 {
-    public class BitmapInfo
+    public abstract class BitmapInfo
     {
         public object BitmapLock;
         public IntPtr BackBufferHandle;
@@ -17,10 +18,16 @@ namespace CefSharp.Internals
 
         public IntPtr FileMappingHandle { get; set; }
 
-        // Cannot be InteropBitmap since we really don't want CefSharp to be dependent on WPF libraries.
-        public object InteropBitmap;
+        public int BytesPerPixel { get; protected set; }
+        public bool DirtyRectSupport { get; protected set; }
+        public int NumberOfBytes { get; set; }
 
-        public BitmapInfo()
+        public abstract bool CreateNewBitmap { get; }
+        public abstract void ClearBitmap();
+
+        public CefDirtyRect DirtyRect { get; set; }
+
+        protected BitmapInfo()
         {
             BitmapLock = new object();
         }

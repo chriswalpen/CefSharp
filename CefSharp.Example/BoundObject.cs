@@ -1,18 +1,43 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace CefSharp.Example
 {
-    class BoundObject
+    public class BoundObject
     {
         public int MyProperty { get; set; }
+
         public string MyReadOnlyProperty { get; internal set; }
         public Type MyUnconvertibleProperty { get; set; }
+        public SubBoundObject SubObject { get; set; }
 
         public BoundObject()
         {
             MyProperty = 42;
             MyReadOnlyProperty = "I'm immutable!";
+            IgnoredProperty = "I am an Ignored Property";
             MyUnconvertibleProperty = GetType();
+            SubObject = new SubBoundObject();
+        }
+
+        public void TestCallback(IJavascriptCallback javascriptCallback)
+        {
+            const int taskDelay = 1500;
+
+            Task.Run(async () =>
+            {
+                await Task.Delay(taskDelay);
+
+                using (javascriptCallback)
+                {
+                    await javascriptCallback.ExecuteAsync("This callback from C# was delayed " + taskDelay + "ms");
+                }
+            });
+        }
+
+        public int EchoMyProperty()
+        {
+            return MyProperty;
         }
 
         public string Repeat(string str, int n)
@@ -23,6 +48,11 @@ namespace CefSharp.Example
                 result += str;
             }
             return result;
+        }
+
+        public string EchoParamOrDefault(string param = "This is the default value")
+        {
+            return param;
         }
 
         public void EchoVoid()
@@ -174,7 +204,7 @@ namespace CefSharp.Example
             return arg0;
         }
 
-        // This will currently not work, as it causes a collision w/ the EchoString() method.
+        // TODO: This will currently not work, as it causes a collision w/ the EchoString() method. We need to find a way around that I guess.
         //public String echoString(String arg)
         //{
         //    return "Lowercase echo: " + arg;
@@ -183,6 +213,34 @@ namespace CefSharp.Example
         public String lowercaseMethod()
         {
             return "lowercase";
+        }
+
+        public string ReturnJsonEmployeeList()
+        {
+            return "{\"employees\":[{\"firstName\":\"John\", \"lastName\":\"Doe\"},{\"firstName\":\"Anna\", \"lastName\":\"Smith\"},{\"firstName\":\"Peter\", \"lastName\":\"Jones\"}]}";
+        }
+
+        [JavascriptIgnore]
+        public string IgnoredProperty { get; set; }
+
+        [JavascriptIgnore]
+        public string IgnoredMethod()
+        {
+            return "I am an Ignored Method";
+        }
+
+        public string ComplexParamObject(object param)
+        {
+            if (param == null)
+            {
+                return "param is null";
+            }
+            return "The param type is:" + param.GetType();
+        }
+
+        public SubBoundObject GetSubObject()
+        {
+            return SubObject;
         }
     }
 }

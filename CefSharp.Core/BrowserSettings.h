@@ -1,4 +1,4 @@
-// Copyright � 2010-2014 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2014 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -71,13 +71,15 @@ namespace CefSharp
 
     public ref class BrowserSettings
     {
+    private:
+        bool _isFinalized;
     internal:
         CefBrowserSettings* _browserSettings;
 
     public:
-        BrowserSettings() : _browserSettings(new CefBrowserSettings()) { }
-        !BrowserSettings() { delete _browserSettings; }
-        ~BrowserSettings() { delete _browserSettings; }
+        BrowserSettings() : _browserSettings(new CefBrowserSettings()), _isFinalized(false) { }
+        !BrowserSettings() { delete _browserSettings; _isFinalized = true; }
+        ~BrowserSettings() { if (!_isFinalized) this->!BrowserSettings(); }
 
         // CefBrowserSettings is private causing whole field to be private
         // exposing void* as a workaround
@@ -272,10 +274,5 @@ namespace CefSharp
             void set(Nullable<bool>^ value) { _browserSettings->webgl = CefStateFromDisabledSetting(value); }
         }
 
-        property Nullable<bool>^ AcceleratedCompositingDisabled
-        {
-            Nullable<bool>^ get() { return CefStateToDisabledSetting(_browserSettings->accelerated_compositing); }
-            void set(Nullable<bool>^ value) { _browserSettings->accelerated_compositing = CefStateFromDisabledSetting(value); }
-        }
     };
 }

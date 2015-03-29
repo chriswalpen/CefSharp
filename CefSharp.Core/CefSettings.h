@@ -1,4 +1,4 @@
-// Copyright � 2010-2014 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2014 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -13,75 +13,52 @@ using namespace CefSharp::Internals;
 
 namespace CefSharp
 {
-    public ref class CefSettings : CefSettingsBase
+    public ref class CefSettings
     {
+    private:
+        List<CefCustomScheme^>^ _cefCustomSchemes;
+        IDictionary<String^, String^>^ _cefCommandLineArgs;
+
     internal:
         ::CefSettings* _cefSettings;
-
-        cef_log_severity_t SeverityToNative(CefSharp::LogSeverity severity)
-        {
-            switch (severity)
-            {
-            case CefSharp::LogSeverity::Verbose:
-                return LOGSEVERITY_VERBOSE;
-            case CefSharp::LogSeverity::Info:
-                return LOGSEVERITY_INFO;
-            case CefSharp::LogSeverity::Warning:
-                return LOGSEVERITY_WARNING;
-            case CefSharp::LogSeverity::Error:
-                return LOGSEVERITY_ERROR;
-            case CefSharp::LogSeverity::ErrorReport:
-                return LOGSEVERITY_ERROR_REPORT;
-            case CefSharp::LogSeverity::Disable:
-            default:
-                return LOGSEVERITY_DISABLE;
-            }
-        }
-
-        CefSharp::LogSeverity SeverityToManaged(cef_log_severity_t severity)
-        {
-            switch (severity)
-            {
-            case LOGSEVERITY_VERBOSE:
-                return CefSharp::LogSeverity::Verbose;
-            case LOGSEVERITY_INFO:
-                return CefSharp::LogSeverity::Info;
-            case LOGSEVERITY_WARNING:
-                return CefSharp::LogSeverity::Warning;
-            case LOGSEVERITY_ERROR:
-                return CefSharp::LogSeverity::Error;
-            case LOGSEVERITY_ERROR_REPORT:
-                return CefSharp::LogSeverity::ErrorReport;
-            case LOGSEVERITY_DISABLE:
-            default:
-                return CefSharp::LogSeverity::Disable;
-            }
-        }
 
     public:
         CefSettings() : _cefSettings(new ::CefSettings())
         {
             _cefSettings->multi_threaded_message_loop = true;
+            BrowserSubprocessPath = "CefSharp.BrowserSubprocess.exe";
+            _cefCustomSchemes = gcnew List<CefCustomScheme^>();
+            _cefCommandLineArgs = gcnew Dictionary<String^, String^>();
         }
 
         !CefSettings() { delete _cefSettings; }
         ~CefSettings() { delete _cefSettings; }
 
+        virtual property IEnumerable<CefCustomScheme^>^ CefCustomSchemes
+        {
+            IEnumerable<CefCustomScheme^>^ get() { return _cefCustomSchemes; }
+        }
+
+        virtual property IDictionary<String^, String^>^ CefCommandLineArgs
+        {
+            IDictionary<String^, String^>^ get() { return _cefCommandLineArgs; }
+        }
+
         virtual property bool MultiThreadedMessageLoop
         {
-            bool get() override { return _cefSettings->multi_threaded_message_loop == 1; }
+            bool get() { return _cefSettings->multi_threaded_message_loop == 1; }
         }
 
         virtual property String^ BrowserSubprocessPath
         {
-            String^ get() override { return StringUtils::ToClr(_cefSettings->browser_subprocess_path); }
-            void set(String^ value) override { StringUtils::AssignNativeFromClr(_cefSettings->browser_subprocess_path, value); }
+            String^ get() { return StringUtils::ToClr(_cefSettings->browser_subprocess_path); }
+            void set(String^ value) { StringUtils::AssignNativeFromClr(_cefSettings->browser_subprocess_path, value); }
         }
 
         virtual property String^ CachePath
         {
-            String^ get() override { return StringUtils::ToClr(_cefSettings->cache_path); }
-            void set(String^ value) override { StringUtils::AssignNativeFromClr(_cefSettings->cache_path, value); }
+            String^ get() { return StringUtils::ToClr(_cefSettings->cache_path); }
+            void set(String^ value) { StringUtils::AssignNativeFromClr(_cefSettings->cache_path, value); }
         }
 
         virtual property bool IgnoreCertificateErrors
@@ -92,50 +69,65 @@ namespace CefSharp
 
         virtual property String^ Locale
         {
-            String^ get() override { return StringUtils::ToClr(_cefSettings->locale); }
-            void set(String^ value) override { StringUtils::AssignNativeFromClr(_cefSettings->locale, value); }
+            String^ get() { return StringUtils::ToClr(_cefSettings->locale); }
+            void set(String^ value) { StringUtils::AssignNativeFromClr(_cefSettings->locale, value); }
         }
 
         virtual property String^ LocalesDirPath
         {
-            String^ get() override { return StringUtils::ToClr(_cefSettings->locales_dir_path); }
-            void set(String^ value) override { StringUtils::AssignNativeFromClr(_cefSettings->locales_dir_path, value); }
+            String^ get() { return StringUtils::ToClr(_cefSettings->locales_dir_path); }
+            void set(String^ value) { StringUtils::AssignNativeFromClr(_cefSettings->locales_dir_path, value); }
         }
 
         virtual property String^ LogFile
         {
-            String^ get() override { return StringUtils::ToClr(_cefSettings->log_file); }
-            void set(String^ value) override { StringUtils::AssignNativeFromClr(_cefSettings->log_file, value); }
+            String^ get() { return StringUtils::ToClr(_cefSettings->log_file); }
+            void set(String^ value) { StringUtils::AssignNativeFromClr(_cefSettings->log_file, value); }
         }
 
         virtual property CefSharp::LogSeverity LogSeverity
         {
-            CefSharp::LogSeverity get() override { return SeverityToManaged(_cefSettings->log_severity); }
-            void set(CefSharp::LogSeverity value) override { _cefSettings->log_severity = SeverityToNative(value); }
+            CefSharp::LogSeverity get() { return (CefSharp::LogSeverity)_cefSettings->log_severity; }
+            void set(CefSharp::LogSeverity value) { _cefSettings->log_severity = (cef_log_severity_t)value; }
         }
 
         virtual property bool PackLoadingDisabled
         {
-            bool get() override { return _cefSettings->pack_loading_disabled == 1; }
-            void set(bool value) override { _cefSettings->pack_loading_disabled = value; }
+            bool get() { return _cefSettings->pack_loading_disabled == 1; }
+            void set(bool value) { _cefSettings->pack_loading_disabled = value; }
         }
 
         virtual property String^ ProductVersion
         {
-            String^ get() override { return StringUtils::ToClr(_cefSettings->product_version); }
-            void set(String^ value) override { StringUtils::AssignNativeFromClr(_cefSettings->product_version, value); }
+            String^ get() { return StringUtils::ToClr(_cefSettings->product_version); }
+            void set(String^ value) { StringUtils::AssignNativeFromClr(_cefSettings->product_version, value); }
         }
 
         virtual property int RemoteDebuggingPort
         {
-            int get() override { return _cefSettings->remote_debugging_port; }
-            void set(int value) override { _cefSettings->remote_debugging_port = value; }
+            int get() { return _cefSettings->remote_debugging_port; }
+            void set(int value) { _cefSettings->remote_debugging_port = value; }
         }
 
         virtual property String^ UserAgent
         {
-            String^ get() override { return StringUtils::ToClr(_cefSettings->user_agent); }
-            void set(String^ value) override { StringUtils::AssignNativeFromClr(_cefSettings->user_agent, value); }
+            String^ get() { return StringUtils::ToClr(_cefSettings->user_agent); }
+            void set(String^ value) { StringUtils::AssignNativeFromClr(_cefSettings->user_agent, value); }
+        }
+
+        virtual property bool WindowlessRenderingEnabled
+        {
+            bool get() { return _cefSettings->windowless_rendering_enabled == 1; }
+            void set(bool value) { _cefSettings->windowless_rendering_enabled = value; }
+        }
+
+        /// <summary>
+        /// Registers a custom scheme using the provided settings.
+        /// </summary>
+        /// <param name="cefCustomScheme">The CefCustomScheme which provides the details about the scheme.</param>
+        void RegisterScheme(CefCustomScheme^ cefCustomScheme)
+        {
+            _cefCustomSchemes->Add(cefCustomScheme);
         }
     };
 }

@@ -56,7 +56,6 @@ namespace CefSharp.Wpf.Example.ViewModels
         }
 
         private object evaluateJavaScriptResult;
-
         public object EvaluateJavaScriptResult
         {
             get { return evaluateJavaScriptResult; }
@@ -93,11 +92,17 @@ namespace CefSharp.Wpf.Example.ViewModels
             OutputMessage = version;
         }
 
-        private void EvaluateJavaScript(string s)
+        private async void EvaluateJavaScript(string s)
         {
             try
             {
-                EvaluateJavaScriptResult = webBrowser.EvaluateScript(s) ?? "null";
+                var response = await webBrowser.EvaluateScriptAsync(s);
+                if (response.Success && response.Result is IJavascriptCallback)
+                {
+                    response = await ((IJavascriptCallback)response.Result).ExecuteAsync("This is a callback from EvaluateJavaScript");
+                }
+
+                EvaluateJavaScriptResult = response.Success ? (response.Result ?? "null") : response.Message;
             }
             catch (Exception e)
             {

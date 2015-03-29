@@ -32,31 +32,28 @@
     <ClCompile Include="Internals\StreamAdapter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TypeUtils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SchemeHandlerWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SchemeHandlerResponse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CefAppWrapper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Internals\CefWebPluginInfoWrapper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Internals\RequestResponse.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Internals\StringVisitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Internals\DownloadAdapter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Internals\CompletionHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Internals\DownloadAdapter.cpp">
+    <ClCompile Include="Internals\CefContextMenuParamsWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NativeMethodWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SchemeHandlerFactoryWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -97,13 +94,10 @@
     <ClInclude Include="BrowserSettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MouseButtonType.h">
+    <ClInclude Include="PaintElementType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Internals\RenderClientAdapter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TypeUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SchemeHandlerWrapper.h">
@@ -115,25 +109,31 @@
     <ClInclude Include="ManagedCefBrowserAdapter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Wrappers\CefSubprocessWrapper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Wrappers\CefAppWrapper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="CefSettings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Internals\CefWebPluginInfoWrapper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Internals\RequestResponse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Internals\StringVisitor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Internals\CompletionHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Internals\AutoLock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Internals\CefContextMenuParamsWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Internals\CefDragDataWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NativeMethodWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Internals\TypeConversion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SchemeHandlerFactoryWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

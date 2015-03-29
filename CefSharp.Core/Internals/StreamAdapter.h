@@ -1,8 +1,9 @@
-// Copyright � 2010-2014 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2014 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #include "Stdafx.h"
+#include "AutoLock.h"
 #pragma once
 
 using namespace System;
@@ -14,18 +15,25 @@ namespace CefSharp
     {
         private class StreamAdapter : public CefReadHandler
         {
+            CriticalSection _syncRoot;
             gcroot<Stream^> _stream;
+            bool _isMemoryStream;
 
         public:
             virtual ~StreamAdapter();
-            StreamAdapter(Stream^ stream) : _stream(stream) { }
+            StreamAdapter(Stream^ stream) : _stream(stream)
+            {
+                //Reset stream position
+                stream->Position = 0;
+                _isMemoryStream = (dynamic_cast<MemoryStream^>(stream)) != nullptr;
+            }
 
             virtual size_t Read(void* ptr, size_t size, size_t n);
             virtual int Seek(int64 offset, int whence);
             virtual int64 Tell();
             virtual int Eof();
+            virtual bool MayBlock();
 
-            IMPLEMENT_LOCKING(StreamAdapter);
             IMPLEMENT_REFCOUNTING(StreamAdapter);
         };
     }

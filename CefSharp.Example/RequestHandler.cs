@@ -1,17 +1,18 @@
 ﻿using System;
-using System.IO;
-using System.Text;
 
 namespace CefSharp.Example
 {
     public class RequestHandler : IRequestHandler
     {
-        private static readonly Uri ResourceUrl = new Uri("http://test/resource/load");
-
         public static readonly string VersionNumberString = String.Format("Chromium: {0}, CEF: {1}, CefSharp: {2}",
             Cef.ChromiumVersion, Cef.CefVersion, Cef.CefSharpVersion);
 
-        bool IRequestHandler.OnBeforeBrowse(IWebBrowser browser, IRequest request, bool isRedirect)
+        bool IRequestHandler.OnBeforeBrowse(IWebBrowser browser, IRequest request, bool isRedirect, bool isMainFrame)
+        {
+            return false;
+        }
+
+        bool IRequestHandler.OnCertificateError(IWebBrowser browser, CefErrorCode errorCode, string requestUrl)
         {
             return false;
         }
@@ -21,16 +22,8 @@ namespace CefSharp.Example
             // TODO: Add your own code here for handling scenarios where a plugin crashed, for one reason or another.
         }
 
-        bool IRequestHandler.OnBeforeResourceLoad(IWebBrowser browser, IRequestResponse requestResponse)
+        bool IRequestHandler.OnBeforeResourceLoad(IWebBrowser browser, IRequest request, IResponse response, bool isMainFrame)
         {
-            IRequest request = requestResponse.Request;
-            if (request.Url.StartsWith(ResourceUrl.ToString()))
-            {
-                Stream resourceStream = new MemoryStream(Encoding.UTF8.GetBytes(
-                    "<html><body><h1>Success</h1><p>This document is loaded from a System.IO.Stream</p></body></html>"));
-                requestResponse.RespondWith(resourceStream, "text/html");
-            }
-
             return false;
         }
 
@@ -39,7 +32,7 @@ namespace CefSharp.Example
             return false;
         }
 
-        bool IRequestHandler.OnBeforePluginLoad(IWebBrowser browser, string url, string policy_url, IWebPluginInfo info)
+        bool IRequestHandler.OnBeforePluginLoad(IWebBrowser browser, string url, string policyUrl, WebPluginInfo info)
         {
             bool blockPluginLoad = false;
 

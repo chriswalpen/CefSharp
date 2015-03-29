@@ -4,7 +4,6 @@
 *.exe.config
 *.exp
 *.ipch
-*.manifest
 *.metagen
 *.ncb
 *.nupkg
@@ -23,6 +22,7 @@ bin/
 obj/
 packages/
 Debug/
+Release/
 CefSharp/app.aps
 debug.log
 CefSharp.BrowserSubprocess/Release

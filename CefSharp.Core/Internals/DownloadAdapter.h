@@ -1,4 +1,4 @@
-// Copyright � 2010-2014 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2014 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -18,8 +18,6 @@ namespace CefSharp
         {
         private:
             gcroot<IDownloadHandler^> _handler;
-            DownloadItem^ DownloadAdapter::GetDownloadItem(CefRefPtr<CefDownloadItem> download_item);
-            Nullable<DateTime> ConvertCefTimeToNullableDateTime(CefTime time);
 
         public:
             DownloadAdapter(IDownloadHandler^ handler) : _handler(handler) { }

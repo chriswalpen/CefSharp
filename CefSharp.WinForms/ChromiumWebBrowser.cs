@@ -3,17 +3,24 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
-using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
 using CefSharp.Internals;
+using CefSharp.WinForms.Internals;
 
 namespace CefSharp.WinForms
 {
     public class ChromiumWebBrowser : Control, IWebBrowserInternal, IWinFormsWebBrowser
     {
         private ManagedCefBrowserAdapter managedCefBrowserAdapter;
+        private ParentFormMessageInterceptor parentFormMessageInterceptor;
+
+        /// <summary>
+        /// Set to true while handing an activating WM_ACTIVATE message.
+        /// MUST ONLY be cleared by DefaultFocusHandler.
+        /// </summary>
+        public bool IsActivating { get; set; }
 
         public BrowserSettings BrowserSettings { get; set; }
         public string Title { get; set; }
@@ -29,11 +36,25 @@ namespace CefSharp.WinForms
         public ILifeSpanHandler LifeSpanHandler { get; set; }
         public IMenuHandler MenuHandler { get; set; }
 
+        /// <summary>
+        /// The <see cref="IFocusHandler"/> for this ChromiumWebBrowser.
+        /// </summary>
+        /// <remarks>
+        /// If you need customized focus handling behavior for WinForms, the suggested 
+        /// best practice would be to inherit from DefaultFocusHandler and try to avoid 
+        /// needing to override the logic in OnGotFocus. The implementation in 
+        /// DefaultFocusHandler relies on very detailed behavior of how WinForms and 
+        /// Windows interact during window activation.
+        /// </remarks>
+        public IFocusHandler FocusHandler { get; set; }
+        public IDragHandler DragHandler { get; set; }
+        public IResourceHandlerFactory ResourceHandlerFactory { get; set; }
+        public IGeolocationHandler GeolocationHandler { get; set; }
+
         public bool CanGoForward { get; private set; }
         public bool CanGoBack { get; private set; }
         public bool CanReload { get; private set; }
         public bool IsBrowserInitialized { get; private set; }
-        public IDictionary<string, object> BoundObjects { get; private set; }
 
         public double ZoomLevel
         {
@@ -53,30 +74,73 @@ namespace CefSharp.WinForms
 
         public ChromiumWebBrowser(string address)
         {
+            if (!Cef.IsInitialized && !Cef.Initialize())
+            {
+                throw new InvalidOperationException("Cef::Initialize() failed");
+            }
+
             Cef.AddDisposable(this);
             Address = address;
 
-            Paint += OnPaint;
-
-            //Redraw on Resize so Cef is notified and updates accordingly
-            SetStyle(ControlStyles.ResizeRedraw, true);
-
             Dock = DockStyle.Fill;
+
+            FocusHandler = new DefaultFocusHandler(this);
+            ResourceHandlerFactory = new DefaultResourceHandlerFactory();
+            BrowserSettings = new BrowserSettings();
+
+            managedCefBrowserAdapter = new ManagedCefBrowserAdapter(this, false);
         }
 
         protected override void Dispose(bool disposing)
         {
-            Paint -= OnPaint;
+            // Don't utilize any of the handlers anymore:
+            DialogHandler = null;
+            JsDialogHandler = null;
+            KeyboardHandler = null;
+            RequestHandler = null;
+            DownloadHandler = null;
+            LifeSpanHandler = null;
+            MenuHandler = null;
+            DragHandler = null;
+            GeolocationHandler = null;
+            FocusHandler = null;
+            ResourceHandlerFactory = null;
 
             Cef.RemoveDisposable(this);
 
             if (disposing)
             {
+                IsBrowserInitialized = false;
+
+                if (BrowserSettings != null)
+                {
+                    BrowserSettings.Dispose();
+                    BrowserSettings = null;
+                }
+
+                if (parentFormMessageInterceptor != null)
+                {
+                    parentFormMessageInterceptor.Dispose();
+                    parentFormMessageInterceptor = null;
+                }
+
                 if (managedCefBrowserAdapter != null)
                 {
                     managedCefBrowserAdapter.Dispose();
                     managedCefBrowserAdapter = null;
                 }
+
+                // Don't maintain a reference to event listeners anylonger:
+                LoadError = null;
+                FrameLoadStart = null;
+                FrameLoadEnd = null;
+                NavStateChanged = null;
+                ConsoleMessage = null;
+                StatusMessage = null;
+                AddressChanged = null;
+                TitleChanged = null;
+                IsBrowserInitializedChanged = null;
+                IsLoadingChanged = null;
             }
             base.Dispose(disposing);
         }
@@ -84,6 +148,17 @@ namespace CefSharp.WinForms
         void IWebBrowserInternal.OnInitialized()
         {
             IsBrowserInitialized = true;
+
+            // By the time this callback gets called, this control
+            // is most likely hooked into a browser Form of some sort. 
+            // (Which is what ParentFormMessageInterceptor relies on.)
+            // Ensure the ParentFormMessageInterceptor construction occurs on the WinForms UI thread:
+            this.InvokeOnUiThreadIfRequired(() =>
+            {
+                parentFormMessageInterceptor = new ParentFormMessageInterceptor(this);
+            });
+
+            ResizeBrowser();
 
             var handler = IsBrowserInitializedChanged;
 
@@ -95,17 +170,37 @@ namespace CefSharp.WinForms
 
         public void Load(String url)
         {
-            managedCefBrowserAdapter.LoadUrl(url);
+            if (IsBrowserInitialized)
+            {
+                managedCefBrowserAdapter.LoadUrl(url);
+            }
+            else
+            {
+                Address = url;
+            }
         }
 
         public void LoadHtml(string html, string url)
         {
-            managedCefBrowserAdapter.LoadHtml(html, url);
+            LoadHtml(html, url, Encoding.UTF8);
+        }
+
+        public void LoadHtml(string html, string url, Encoding encoding)
+        {
+            var factory = ResourceHandlerFactory;
+            if (factory == null)
+            {
+                throw new Exception("Implement IResourceHandlerFactory and assign to the ResourceHandlerFactory property to use this feature");
+            }
+
+            factory.RegisterHandler(url, ResourceHandler.FromString(html, encoding, true));
+
+            Load(url);
         }
 
         public void RegisterJsObject(string name, object objectToBind)
         {
-            throw new NotImplementedException();
+            managedCefBrowserAdapter.RegisterJsObject(name, objectToBind);
         }
 
         public void ExecuteScriptAsync(string script)
@@ -113,19 +208,19 @@ namespace CefSharp.WinForms
             managedCefBrowserAdapter.ExecuteScriptAsync(script);
         }
 
-        public object EvaluateScript(string script)
+        public Task<JavascriptResponse> EvaluateScriptAsync(string script)
         {
-            return EvaluateScript(script, timeout: null);
+            return EvaluateScriptAsync(script, timeout: null);
         }
 
-        public object EvaluateScript(string script, TimeSpan? timeout)
+        public Task<JavascriptResponse> EvaluateScriptAsync(string script, TimeSpan? timeout)
         {
-            if (timeout == null)
-            {
-                timeout = TimeSpan.MaxValue;
-            }
+            return managedCefBrowserAdapter.EvaluateScriptAsync(script, timeout);
+        }
 
-            return managedCefBrowserAdapter.EvaluateScript(script, timeout.Value);
+        public void SendMouseWheelEvent(int x, int y, int deltaX, int deltaY)
+        {
+            managedCefBrowserAdapter.OnMouseWheel(x, y, deltaX, deltaY);
         }
 
         public event EventHandler<LoadErrorEventArgs> LoadError;
@@ -141,9 +236,9 @@ namespace CefSharp.WinForms
 
         protected override void OnHandleCreated(EventArgs e)
         {
+            managedCefBrowserAdapter.CreateBrowser(BrowserSettings, Handle, Address);
+
             base.OnHandleCreated(e);
-            managedCefBrowserAdapter = new ManagedCefBrowserAdapter(this);
-            managedCefBrowserAdapter.CreateBrowser(BrowserSettings ?? new BrowserSettings(), Handle, Address);
         }
 
         void IWebBrowserInternal.SetAddress(string address)
@@ -168,16 +263,16 @@ namespace CefSharp.WinForms
             }
         }
 
-        void IWebBrowserInternal.SetNavState(bool canGoBack, bool canGoForward, bool canReload)
+        void IWebBrowserInternal.SetLoadingStateChange(bool canGoBack, bool canGoForward, bool isLoading)
         {
             CanGoBack = canGoBack;
             CanGoForward = canGoForward;
-            CanReload = canReload;
+            CanReload = !isLoading;
 
             var handler = NavStateChanged;
             if (handler != null)
             {
-                handler(this, new NavStateChangedEventArgs(canGoBack, canGoForward, canReload));
+                handler(this, new NavStateChangedEventArgs(canGoBack, canGoForward, isLoading));
             }
         }
 
@@ -213,11 +308,6 @@ namespace CefSharp.WinForms
             {
                 handler(this, new FrameLoadEndEventArgs(url, isMainFrame, httpStatusCode));
             }
-        }
-
-        void IWebBrowserInternal.OnTakeFocus(bool next)
-        {
-            SelectNextControl(this, next, true, true, true);
         }
 
         void IWebBrowserInternal.OnConsoleMessage(string message, string source, int line)
@@ -351,12 +441,77 @@ namespace CefSharp.WinForms
             return taskStringVisitor.Task;
         }
 
-        private void OnPaint(object sender, PaintEventArgs e)
+        /// <summary>
+        /// Manually implement Focused because cef does not implement it.
+        /// </summary>
+        /// <remarks>
+        /// This is also how the Microsoft's WebBrowserControl implements the Focused property.
+        /// </remarks>
+        public override bool Focused
         {
-            // Size is 0x0 when we are on a modeless Form which is minimized.
-            if (!Size.IsEmpty && managedCefBrowserAdapter != null)
+            get
             {
-                managedCefBrowserAdapter.OnPaint(Handle);
+                if (base.Focused)
+                {
+                    return true;
+                }
+
+                if (!IsHandleCreated)
+                {
+                    return false;
+                }
+
+                return NativeMethodWrapper.IsFocused(Handle);
+            }
+        }
+
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            
+            ResizeBrowser();
+        }
+
+        private void ResizeBrowser()
+        {
+            if (IsBrowserInitialized)
+            {
+                managedCefBrowserAdapter.Resize(Width, Height);
+            }
+        }
+
+        public void NotifyMoveOrResizeStarted()
+        {
+            if (IsBrowserInitialized)
+            {
+                managedCefBrowserAdapter.NotifyMoveOrResizeStarted();
+            }
+        }
+
+        public void ReplaceMisspelling(string word)
+        {
+            managedCefBrowserAdapter.ReplaceMisspelling(word);
+        }
+
+        public void AddWordToDictionary(string word)
+        {
+            managedCefBrowserAdapter.AddWordToDictionary(word);
+        }
+
+        protected override void OnGotFocus(EventArgs e)
+        {
+            SetFocus(true);
+            base.OnGotFocus(e);
+        }
+
+        /// <summary>
+        /// Tell the browser to acquire/release focus.
+        /// </summary>
+        public void SetFocus(bool isFocused)
+        {
+            if (IsBrowserInitialized)
+            {
+                managedCefBrowserAdapter.SetFocus(isFocused);
             }
         }
     }

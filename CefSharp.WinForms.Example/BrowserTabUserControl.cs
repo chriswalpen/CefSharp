@@ -1,7 +1,7 @@
-﻿using System.Threading.Tasks;
-using CefSharp.WinForms.Example.Controls;
+﻿using CefSharp.Example;
 using System;
 using System.Windows.Forms;
+using CefSharp.WinForms.Internals;
 
 namespace CefSharp.WinForms.Example
 {
@@ -22,30 +22,32 @@ namespace CefSharp.WinForms.Example
 
             Browser = browser;
 
-            Browser.MenuHandler = new MenuHandler();
-            Browser.NavStateChanged += OnBrowserNavStateChanged;
-            Browser.ConsoleMessage += OnBrowserConsoleMessage;
-            Browser.TitleChanged += OnBrowserTitleChanged;
-            Browser.AddressChanged += OnBrowserAddressChanged;
-            Browser.StatusMessage += OnBrowserStatusMessage;
+            browser.MenuHandler = new MenuHandler();
+            browser.RequestHandler = new RequestHandler();
+            browser.JsDialogHandler = new JsDialogHandler();
+            browser.GeolocationHandler = new GeolocationHandler();
+            browser.DownloadHandler = new DownloadHandler();
+            //browser.FocusHandler = new FocusHandler(browser, urlTextBox);
+            browser.NavStateChanged += OnBrowserNavStateChanged;
+            browser.ConsoleMessage += OnBrowserConsoleMessage;
+            browser.TitleChanged += OnBrowserTitleChanged;
+            browser.AddressChanged += OnBrowserAddressChanged;
+            browser.StatusMessage += OnBrowserStatusMessage;
+            browser.IsBrowserInitializedChanged += OnIsBrowserInitializedChanged;
+            browser.IsLoadingChanged += OnIsLoadingChanged;
+            browser.LoadError += OnLoadError;
+            browser.DragHandler = new DragHandler();
+            browser.RegisterJsObject("bound", new BoundObject());
+
+            CefExample.RegisterTestResources(browser);
 
             var version = String.Format("Chromium: {0}, CEF: {1}, CefSharp: {2}", Cef.ChromiumVersion, Cef.CefVersion, Cef.CefSharpVersion);
             DisplayOutput(version);
-
-            Disposed += BrowserTabUserControlDisposed;
         }
 
-        private void BrowserTabUserControlDisposed(object sender, EventArgs e)
+        private void OnLoadError(object sender, LoadErrorEventArgs args)
         {
-            Disposed -= BrowserTabUserControlDisposed;
-
-            Browser.NavStateChanged -= OnBrowserNavStateChanged;
-            Browser.ConsoleMessage -= OnBrowserConsoleMessage;
-            Browser.TitleChanged -= OnBrowserTitleChanged;
-            Browser.AddressChanged -= OnBrowserAddressChanged;
-            Browser.StatusMessage -= OnBrowserStatusMessage;
-
-            Browser.Dispose();
+            DisplayOutput("Load Error:" + args.ErrorCode + ";" + args.ErrorText);
         }
 
         private void OnBrowserConsoleMessage(object sender, ConsoleMessageEventArgs args)
@@ -96,6 +98,28 @@ namespace CefSharp.WinForms.Example
                 Properties.Resources.nav_plain_green;
 
             HandleToolStripLayout();
+        }
+
+        private void OnIsBrowserInitializedChanged(object sender, IsBrowserInitializedChangedEventArgs args)
+        {
+            
+        }
+
+        private void OnIsLoadingChanged(object sender, IsLoadingChangedEventArgs args)
+        {
+            
+        }
+
+        public void ExecuteScript(string script)
+        {
+            Browser.ExecuteScriptAsync(script);
+        }
+
+        public object EvaluateScript(string script)
+        {
+            var task = Browser.EvaluateScriptAsync(script);
+            task.Wait();
+            return task.Result;
         }
 
         public void DisplayOutput(string output)
@@ -154,19 +178,12 @@ namespace CefSharp.WinForms.Example
             }
         }
 
-        public void CopySourceToClipBoardAsync()
+        public async void CopySourceToClipBoardAsync()
         {
-            var task = Browser.GetSourceAsync();
+            var htmlSource = await Browser.GetSourceAsync();
 
-            task.ContinueWith(t =>
-            {
-                if (!t.IsFaulted)
-                {
-                    Clipboard.SetText(t.Result);
-                    DisplayOutput("HTML Source copied to clipboard");
-                }
-            },
-            TaskScheduler.FromCurrentSynchronizationContext());
+            Clipboard.SetText(htmlSource);
+            DisplayOutput("HTML Source copied to clipboard");
         }
 
         private void ToggleBottomToolStrip()

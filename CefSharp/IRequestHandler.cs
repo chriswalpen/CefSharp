@@ -15,8 +15,18 @@ namespace CefSharp
         /// <param name="browser">the browser object</param>
         /// <param name="request">the request object - cannot be modified in this callback</param>
         /// <param name="isRedirect">has the request been redirected</param>
+        /// <param name="isMainFrame">whether the request comes from main frame or not</param>
         /// <returns>Return true to cancel the navigation or false to allow the navigation to proceed.</returns>
-        bool OnBeforeBrowse(IWebBrowser browser, IRequest request, bool isRedirect);
+        bool OnBeforeBrowse(IWebBrowser browser, IRequest request, bool isRedirect, bool isMainFrame);
+
+        /// <summary>
+        /// Called when a certificate error is thrown.
+        /// </summary>
+        /// <param name="browser">the browser object</param>
+        /// <param name="errorCode">the error code for this invalid certificate</param>
+        /// <param name="requestUrl">the url of the request for the invalid certificate</param>
+        /// <returns>Return true to allow the invalid certificate and continue the request.</returns>
+        bool OnCertificateError(IWebBrowser browser, CefErrorCode errorCode, string requestUrl);
 
         /// <summary>
         /// Called when a plugin has crashed
@@ -29,13 +39,12 @@ namespace CefSharp
         /// Called before a resource request is loaded.
         /// </summary>
         /// <param name="browser">the browser object</param>
-        /// <param name="requestResponse">the request response object - can be modified in this callback</param>
-        /// <returns>To cancel loading of the resource return true or false o allow the resource to load normally.</returns>
-        bool OnBeforeResourceLoad(IWebBrowser browser, IRequestResponse requestResponse);
+        /// <param name="request">the request object - can be modified in this callback.</param>
+        /// <param name="response">the request object - can be modified in this callback.</param>
+        /// /// <param name="isMainFrame">whether the request comes from main frame or not</param>
+        /// <returns>To cancel loading of the resource return true or false to allow the resource to load normally.</returns>
+        bool OnBeforeResourceLoad(IWebBrowser browser, IRequest request, IResponse response, bool isMainFrame);
         
-        // TODO: Investigate how we can support in CEF3.
-        //void OnResourceResponse(IWebBrowser browser, string url, int status, string statusText, string mimeType, WebHeaderCollection headers);
-
         /// <summary>
         /// Called when the browser needs credentials from the user.
         /// </summary>
@@ -58,7 +67,7 @@ namespace CefSharp
         /// <param name="policyUrl">policy URL</param>
         /// <param name="info">plugin information</param>
         /// <returns>Return true to block loading of the plugin.</returns>
-        bool OnBeforePluginLoad(IWebBrowser browser, string url, string policyUrl, IWebPluginInfo info);
+        bool OnBeforePluginLoad(IWebBrowser browser, string url, string policyUrl, WebPluginInfo info);
 
         /// <summary>
         /// Called when the render process terminates unexpectedly.

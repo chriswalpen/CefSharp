@@ -4,7 +4,8 @@
 
 using System;
 using System.Windows.Forms;
-using CefSharp.WinForms.Example.Controls;
+using CefSharp.Example;
+using CefSharp.WinForms.Internals;
 
 namespace CefSharp.WinForms.Example.Minimal
 {
@@ -19,8 +20,6 @@ namespace CefSharp.WinForms.Example.Minimal
             Text = "CefSharp";
             WindowState = FormWindowState.Maximized;
 
-            CreateBrowser();
-
             var bitness = Environment.Is64BitProcess ? "x64" : "x86";
             var version = String.Format("Chromium: {0}, CEF: {1}, CefSharp: {2}, Environment: {3}", Cef.ChromiumVersion, Cef.CefVersion, Cef.CefSharpVersion, bitness);
             DisplayOutput(version);
@@ -28,6 +27,13 @@ namespace CefSharp.WinForms.Example.Minimal
             //Only perform layout when control has completly finished resizing
             ResizeBegin += (s, e) => SuspendLayout();
             ResizeEnd += (s, e) => ResumeLayout(true);
+
+            Load += OnLoad;
+        }
+
+        private void OnLoad(object sender, EventArgs e)
+        {
+            CreateBrowser();
         }
 
         private void CreateBrowser()
@@ -43,6 +49,7 @@ namespace CefSharp.WinForms.Example.Minimal
             browser.StatusMessage += OnBrowserStatusMessage;
             browser.TitleChanged += OnBrowserTitleChanged;
             browser.AddressChanged += OnBrowserAddressChanged;
+            browser.RegisterJsObject("bound", new BoundObject());
         }
 
         private void OnBrowserConsoleMessage(object sender, ConsoleMessageEventArgs args)

@@ -3,12 +3,42 @@ param(
     [Parameter(Position = 0)] 
     [string] $Target = "nupkg",
     [Parameter(Position = 1)]
-    [string] $Version = "33.0.2"
+    [string] $Version = "39.0.0-pre03",
+    [Parameter(Position = 2)]
+    [string] $AssemblyVersion = "39.0.0",
+    [Parameter(Position = 3)]
+    [string] $RedistVersion = "3.2171.1979"
 )
 
 $WorkingDir = split-path -parent $MyInvocation.MyCommand.Definition
 
 $CefSln = Join-Path $WorkingDir 'CefSharp3.sln'
+
+$MSBuildExe = join-path -path (Get-ItemProperty "HKLM:\software\Microsoft\MSBuild\ToolsVersions\4.0").MSBuildToolsPath -childpath "msbuild.exe"
+$MSBuildExe = $MSBuildExe -replace "Framework64", "Framework"
+
+function Write-Diagnostic 
+{
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Message
+    )
+
+    Write-Host
+    Write-Host $Message -ForegroundColor Green
+    Write-Host
+}
+
+if (Test-Path Env:\APPVEYOR_BUILD_VERSION)
+{
+    $Version = $env:APPVEYOR_BUILD_VERSION
+}
+
+if ($env:APPVEYOR_REPO_TAG -eq "True")
+{
+    $Version = "$env:APPVEYOR_REPO_TAG_NAME".Substring(1)  # trim leading "v"
+    Write-Diagnostic "Setting version based on tag to $Version"    
+}
 
 # https://github.com/jbake/Powershell_scripts/blob/master/Invoke-BatchFile.ps1
 function Invoke-BatchFile 
@@ -34,18 +64,6 @@ function Invoke-BatchFile
    Remove-Item $tempFile
 }
 
-function Write-Diagnostic 
-{
-    param(
-        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [string] $Message
-    )
-
-    Write-Host
-    Write-Host $Message -ForegroundColor Green
-    Write-Host
-}
-
 function Die 
 {
     param(
@@ -54,8 +72,8 @@ function Die
     )
 
     Write-Host
-	Write-Error $Message 
-	exit 1
+    Write-Error $Message 
+    exit 1
 }
 
 function Warn 
@@ -66,8 +84,8 @@ function Warn
     )
 
     Write-Host
-	Write-Host $Message -ForegroundColor Yellow
-	Write-Host
+    Write-Host $Message -ForegroundColor Yellow
+    Write-Host
 }
 
 function TernaryReturn 
@@ -142,11 +160,12 @@ function Msvs
         "/t:rebuild",
         "/p:VisualStudioVersion=$VisualStudioVersion",
         "/p:Configuration=$Configuration",
-        "/p:Platform=$Arch"
+        "/p:Platform=$Arch",
+        "/verbosity:normal"
     )
 
     $StartInfo = New-Object System.Diagnostics.ProcessStartInfo
-    $StartInfo.FileName = "msbuild.exe"
+    $StartInfo.FileName = $MSBuildExe
     $StartInfo.Arguments = $Arguments
 
     $StartInfo.EnvironmentVariables.Clear()
@@ -157,13 +176,22 @@ function Msvs
 
     $StartInfo.UseShellExecute = $false
     $StartInfo.CreateNoWindow = $false
+    $StartInfo.RedirectStandardError = $true
+    $StartInfo.RedirectStandardOutput = $true
 
     $Process = New-Object System.Diagnostics.Process
     $Process.StartInfo = $startInfo
-    $Process.Start() 
+    $Process.Start()
+    
+    $stdout = $Process.StandardOutput.ReadToEnd()
+    $stderr = $Process.StandardError.ReadToEnd()
+    
     $Process.WaitForExit()
 
-    if($Process.ExitCode -ne 0) {
+    if($Process.ExitCode -ne 0)
+    {
+        Write-Host "stdout: $stdout"
+        Write-Host "stderr: $stderr"
         Die "Build failed"
     }
 }
@@ -196,7 +224,7 @@ function VSX
 
 function NugetPackageRestore
 {
-    $nuget = Join-Path $env:LOCALAPPDATA .\nuget\NuGet.exe
+    $nuget = Join-Path $WorkingDir .\nuget\NuGet.exe
     if(-not (Test-Path $nuget)) {
         Die "Please install nuget. More information available at: http://docs.nuget.org/docs/start-here/installing-nuget"
     }
@@ -209,7 +237,14 @@ function NugetPackageRestore
 
 function Nupkg
 {
-    $nuget = Join-Path $env:LOCALAPPDATA .\nuget\NuGet.exe
+    if (Test-Path Env:\APPVEYOR_PULL_REQUEST_NUMBER)
+    {
+        Write-Diagnostic "Pr Number: $env:APPVEYOR_PULL_REQUEST_NUMBER"
+        Write-Diagnostic "Skipping Nupkg"
+        return
+    }
+    
+    $nuget = Join-Path $WorkingDir .\nuget\NuGet.exe
     if(-not (Test-Path $nuget)) {
         Die "Please install nuget. More information available at: http://docs.nuget.org/docs/start-here/installing-nuget"
     }
@@ -217,42 +252,65 @@ function Nupkg
     Write-Diagnostic "Building nuget package"
 
     # Build packages
-    . $nuget pack nuget\CefSharp.Common.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
-	. $nuget pack nuget\CefSharp.Wpf.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
-	. $nuget pack nuget\CefSharp.WinForms.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
+    . $nuget pack nuget\CefSharp.Common.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget -Properties "RedistVersion=$RedistVersion"
+    . $nuget pack nuget\CefSharp.Wpf.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
+    . $nuget pack nuget\CefSharp.OffScreen.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
+    . $nuget pack nuget\CefSharp.WinForms.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
+
+    # Invoke `AfterBuild` script if available (ie. upload packages to myget)
+    if(-not (Test-Path $WorkingDir\AfterBuild.ps1)) {
+        return
+    }
+
+    . $WorkingDir\AfterBuild.ps1 -Version $Version
 }
 
 function DownloadNuget()
 {
-	$nuget = Join-Path $env:LOCALAPPDATA .\nuget\NuGet.exe
+    $nuget = Join-Path $WorkingDir .\nuget\NuGet.exe
     if(-not (Test-Path $nuget))
-	{
-		$client = New-Object System.Net.WebClient;
-		$client.DownloadFile('http://nuget.org/nuget.exe', $nuget);
-	}
+    {
+        $client = New-Object System.Net.WebClient;
+        $client.DownloadFile('http://nuget.org/nuget.exe', $nuget);
+    }
+}
+
+function WriteAssemblyVersion
+{
+    param()
+
+    $Filename = Join-Path $WorkingDir CefSharp\Properties\AssemblyInfo.cs
+    $Regex = 'public const string AssemblyVersion = "(.*)"';
+    
+    $AssemblyInfo = Get-Content $Filename
+    $NewString = $AssemblyInfo -replace $Regex, "public const string AssemblyVersion = ""$AssemblyVersion"""
+    
+    $NewString | Set-Content $Filename -Encoding UTF8
 }
 
 DownloadNuget
 
 NugetPackageRestore
 
+WriteAssemblyVersion
+
 switch -Exact ($Target) {
     "nupkg"
-	{
-		#VSX v120
+    {
+        #VSX v120
         VSX v110
         Nupkg
     }
-	"nupkg-only"
-	{
+    "nupkg-only"
+    {
         Nupkg
     }
     "vs2013"
-	{
+    {
         VSX v120
     }
     "vs2012"
-	{
+    {
         VSX v110
     }
 }

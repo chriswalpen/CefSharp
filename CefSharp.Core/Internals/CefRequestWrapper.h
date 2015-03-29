@@ -1,4 +1,4 @@
-// Copyright � 2010-2014 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2014 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -28,6 +28,9 @@ namespace CefSharp
             {
                 _wrappedRequest = nullptr;
             }
+
+        protected:
+            virtual property String^ CharSet { String^ get(); }
 
         public:
             virtual property String^ Url { String^ get(); void set(String^ url); }

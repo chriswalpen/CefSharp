@@ -1,4 +1,4 @@
-// Copyright � 2010-2014 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2014 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -36,7 +36,7 @@ namespace CefSharp
 
         bool handled = false;
 
-        AutoLock lock_scope(this);
+        AutoLock lock_scope(_syncRoot);
 
         auto schemeResponse = gcnew SchemeHandlerResponse(this);
         auto onRequestCompleted = gcnew OnRequestCompletedHandler(schemeResponse, &SchemeHandlerResponse::OnRequestCompleted);
@@ -92,9 +92,9 @@ namespace CefSharp
     {
         bool has_data = false;
 
-        AutoLock lock_scope(this);
+        AutoLock lock_scope(_syncRoot);
 
-        if (!_stream)
+        if (static_cast<Stream^>(_stream) == nullptr)
         {
             bytes_read = 0;
         }
@@ -118,17 +118,17 @@ namespace CefSharp
 
     void SchemeHandlerWrapper::Cancel()
     {
-        if (!!_stream && _closeStream)
+        if (static_cast<Stream^>(_stream) != nullptr && _closeStream)
         {
             _stream->Close();
         }
         _stream = nullptr;
-        _callback = nullptr;
+        _callback = NULL;
     }
 
     int SchemeHandlerWrapper::SizeFromStream()
     {
-        if (!_stream)
+        if (static_cast<Stream^>(_stream) == nullptr)
         {
             return 0;
         }
@@ -141,16 +141,5 @@ namespace CefSharp
             return length;
         }
         return -1;
-    }
-
-    CefRefPtr<CefResourceHandler> SchemeHandlerFactoryWrapper::Create(
-        CefRefPtr<CefBrowser> browser,
-        CefRefPtr<CefFrame> frame,
-        const CefString& scheme_name,
-        CefRefPtr<CefRequest> request)
-    {
-        ISchemeHandler^ handler = _factory->Create();
-        CefRefPtr<SchemeHandlerWrapper> wrapper = new SchemeHandlerWrapper(handler);
-        return static_cast<CefRefPtr<CefResourceHandler>>(wrapper);
     }
 }
