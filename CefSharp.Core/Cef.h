@@ -62,6 +62,11 @@ namespace CefSharp
         }
 
     public:
+        /// <summary>
+        /// Called on the browser process UI thread immediately after the CEF context has been initialized. 
+        /// </summary>
+        static property Action^ OnContextInitialized;
+
         static void AddDisposable(IDisposable^ item)
         {
             msclr::lock l(_sync);
@@ -139,23 +144,34 @@ namespace CefSharp
         /// <return>true if successful; otherwise, false.</return>
         static bool Initialize(CefSettings^ cefSettings)
         {
-            return Initialize(cefSettings, true);
+            return Initialize(cefSettings, true, false);
         }
 
         /// <summary>Initializes CefSharp with user-provided settings.</summary>
         /// <param name="cefSettings">CefSharp configuration settings.</param>
         /// <param name="shutdownOnProcessExit">When the Current AppDomain (relative to the thread called on)
         /// Exits(ProcessExit event) then Shudown will be called.</param>
+        /// <param name="performDependencyCheck">Check that all relevant dependencies avaliable, throws exception if any are missing</param>
         /// <return>true if successful; otherwise, false.</return>
-        static bool Initialize(CefSettings^ cefSettings, bool shutdownOnProcessExit)
+        static bool Initialize(CefSettings^ cefSettings, bool shutdownOnProcessExit, bool performDependencyCheck)
         {
             bool success = false;
 
             // NOTE: Can only initialize Cef once, so subsiquent calls are ignored.
             if (!IsInitialized)
             {
+                if (cefSettings->BrowserSubprocessPath == nullptr)
+                {
+                    throw gcnew Exception("CefSettings BrowserSubprocessPath cannot be null.");
+                }
+
+                if(performDependencyCheck)
+                {
+                    DependencyChecker::AssertAllDependenciesPresent(cefSettings->Locale, cefSettings->LocalesDirPath, cefSettings->ResourcesDirPath, cefSettings->PackLoadingDisabled, cefSettings->BrowserSubprocessPath);
+                }
+
                 CefMainArgs main_args;
-                CefRefPtr<CefSharpApp> app(new CefSharpApp(cefSettings));
+                CefRefPtr<CefSharpApp> app(new CefSharpApp(cefSettings, OnContextInitialized));
 
                 success = CefInitialize(main_args, *(cefSettings->_cefSettings), app.get(), NULL);
                 app->CompleteSchemeRegistrations();
@@ -424,13 +440,14 @@ namespace CefSharp
         {
             if (IsInitialized)
             { 
+                OnContextInitialized = nullptr;
+                
+                msclr::lock l(_sync);
+                for each(IDisposable^ diposable in Enumerable::ToList(_disposables))
                 {
-                    msclr::lock l(_sync);
-                    for each(IDisposable^ diposable in Enumerable::ToList(_disposables))
-                    {
-                        delete diposable;
-                    }
+                    delete diposable;
                 }
+                
                 GC::Collect();
                 GC::WaitForPendingFinalizers();
 

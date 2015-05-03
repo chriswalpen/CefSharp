@@ -23,6 +23,11 @@ namespace CefSharp.Internals
         public string JavascriptName { get; set; }
 
         /// <summary>
+        /// Indicate if JavascriptName is camel case or not
+        /// </summary>
+        public bool CamelCaseJavascriptNames { get; set; }
+
+        /// <summary>
         /// Gets the methods of the <see cref="JavascriptObject" />.
         /// </summary>
         [DataMember]

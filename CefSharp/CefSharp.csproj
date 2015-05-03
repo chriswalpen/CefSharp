@@ -91,7 +91,9 @@
     <Compile Include="CefDirtyRect.cs" />
     <Compile Include="CefFileDialogMode.cs" />
     <Compile Include="DefaultResourceHandlerFactory.cs" />
+    <Compile Include="DependencyChecker.cs" />
     <Compile Include="IJavascriptCallback.cs" />
+    <Compile Include="Internals\IntPtrExtensions.cs" />
     <Compile Include="Internals\JavascriptCallbackProxy.cs" />
     <Compile Include="Internals\JavascriptCallback.cs" />
     <Compile Include="Internals\JavascriptCallbackEndpointBehavior.cs" />
@@ -126,7 +128,6 @@
     <Compile Include="Internals\WCFExtensions.cs" />
     <Compile Include="KeyType.cs" />
     <Compile Include="ResourceHandler.cs" />
-    <Compile Include="Response.cs" />
     <Compile Include="ResponseAction.cs" />
     <Compile Include="ScreenInfo.cs" />
     <Compile Include="TransitionType.cs" />
@@ -152,7 +153,6 @@
     <Compile Include="WebPluginInfo.cs" />
     <Compile Include="IRequest.cs" />
     <Compile Include="IRequestHandler.cs" />
-    <Compile Include="IResponse.cs" />
     <Compile Include="ISchemeHandler.cs" />
     <Compile Include="ISchemeHandlerFactory.cs" />
     <Compile Include="ISchemeHandlerResponse.cs" />

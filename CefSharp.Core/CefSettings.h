@@ -26,6 +26,7 @@ namespace CefSharp
         CefSettings() : _cefSettings(new ::CefSettings())
         {
             _cefSettings->multi_threaded_message_loop = true;
+            _cefSettings->no_sandbox = true;
             BrowserSubprocessPath = "CefSharp.BrowserSubprocess.exe";
             _cefCustomSchemes = gcnew List<CefCustomScheme^>();
             _cefCommandLineArgs = gcnew Dictionary<String^, String^>();
@@ -78,6 +79,12 @@ namespace CefSharp
             String^ get() { return StringUtils::ToClr(_cefSettings->locales_dir_path); }
             void set(String^ value) { StringUtils::AssignNativeFromClr(_cefSettings->locales_dir_path, value); }
         }
+
+        virtual property String^ ResourcesDirPath
+        {
+            String^ get() { return StringUtils::ToClr(_cefSettings->resources_dir_path); }
+            void set(String^ value) { StringUtils::AssignNativeFromClr(_cefSettings->resources_dir_path, value); }
+        }		
 
         virtual property String^ LogFile
         {

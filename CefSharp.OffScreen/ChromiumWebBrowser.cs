@@ -66,6 +66,7 @@ namespace CefSharp.OffScreen
         public event EventHandler<StatusMessageEventArgs> StatusMessage;
         public event EventHandler<NavStateChangedEventArgs> NavStateChanged;
         public event EventHandler<AddressChangedEventArgs> AddressChanged;
+        [Obsolete("IsLoadingChanged is unreliable and will be removed. Use NavStateChanged instead.")]
         public event EventHandler<IsLoadingChangedEventArgs> IsLoadingChanged;
 
         /// <summary>
@@ -304,9 +305,9 @@ namespace CefSharp.OffScreen
             Load(url);
         }
 
-        public void RegisterJsObject(string name, object objectToBind)
+        public void RegisterJsObject(string name, object objectToBind, bool camelCaseJavascriptNames = true)
         {
-            managedCefBrowserAdapter.RegisterJsObject(name, objectToBind);
+            managedCefBrowserAdapter.RegisterJsObject(name, objectToBind, camelCaseJavascriptNames);
         }
 
         public void Stop()

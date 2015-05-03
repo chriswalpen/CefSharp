@@ -198,9 +198,9 @@ namespace CefSharp.WinForms
             Load(url);
         }
 
-        public void RegisterJsObject(string name, object objectToBind)
+        public void RegisterJsObject(string name, object objectToBind, bool camelCaseJavascriptNames = true)
         {
-            managedCefBrowserAdapter.RegisterJsObject(name, objectToBind);
+            managedCefBrowserAdapter.RegisterJsObject(name, objectToBind, camelCaseJavascriptNames);
         }
 
         public void ExecuteScriptAsync(string script)
@@ -232,6 +232,7 @@ namespace CefSharp.WinForms
         public event EventHandler<AddressChangedEventArgs> AddressChanged;
         public event EventHandler<TitleChangedEventArgs> TitleChanged;
         public event EventHandler<IsBrowserInitializedChangedEventArgs> IsBrowserInitializedChanged;
+        [Obsolete("IsLoadingChanged is unreliable and will be removed. Use NavStateChanged instead.")]
         public event EventHandler<IsLoadingChangedEventArgs> IsLoadingChanged;
 
         protected override void OnHandleCreated(EventArgs e)
